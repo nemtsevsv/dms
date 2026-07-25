@@ -75,7 +75,7 @@ export default function ProductImport() {
         const { data: existing } = await supabase.from("products").select("sku, product_name").in("sku", skus);
         const existingMap = new Map((existing ?? []).map((p: any) => [p.sku, p.product_name]));
 
-        const finalRows = parsedRows.map((r) => ({
+        const finalRows: Record<string, any>[] = parsedRows.map((r) => ({
           ...r,
           product_name: r.product_name ?? existingMap.get(r.sku) ?? r.sku,
         }));

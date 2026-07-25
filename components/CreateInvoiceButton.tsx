@@ -24,8 +24,8 @@ export default function CreateInvoiceButton({
 }: {
   orderId: string;
   orderNumber: string;
-  dealerId: string;
-  dealerName: string;
+  dealerId?: string;
+  dealerName?: string;
   currency: string;
   items: Item[];
 }) {
@@ -69,7 +69,7 @@ export default function CreateInvoiceButton({
   return (
     <button
       onClick={createInvoice}
-      disabled={creating}
+      disabled={creating || !dealerId}
       className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50"
     >
       <FileText size={14} />
