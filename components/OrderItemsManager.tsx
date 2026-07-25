@@ -12,7 +12,12 @@ type Item = {
   unit_price: number | null;
   total: number | null;
   status: string;
-  note: string | null;
+};
+
+type Product = {
+  sku: string;
+  product_name: string;
+  list_price: number | null;
 };
 
 const STATUS_OPTIONS = ["Waiting", "Invoiced", "Cancelled"];
@@ -23,12 +28,42 @@ const statusStyle: Record<string, string> = {
   Cancelled: "bg-red-100 text-red-700",
 };
 
-export default function OrderItemsManager({ orderId, items, currency }: { orderId: string; items: Item[]; currency: string }) {
+export default function OrderItemsManager({
+  orderId,
+  items,
+  currency,
+  products,
+  dealerDiscount,
+}: {
+  orderId: string;
+  items: Item[];
+  currency: string;
+  products: Product[];
+  dealerDiscount: number;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
 
   const [newItem, setNewItem] = useState({ sku: "", product_name: "", quantity: 1, unit_price: 0 });
+
+  function priceFromList(listPrice: number) {
+    return Math.round(listPrice * (1 - dealerDiscount / 100) * 100) / 100;
+  }
+
+  function handleSkuSelect(sku: string) {
+    const product = products.find((p) => p.sku === sku);
+    if (product) {
+      setNewItem({
+        sku: product.sku,
+        product_name: product.product_name,
+        quantity: 1,
+        unit_price: priceFromList(product.list_price ?? 0),
+      });
+    } else {
+      setNewItem((f) => ({ ...f, sku }));
+    }
+  }
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
@@ -69,19 +104,26 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
     <div>
       <form onSubmit={addItem} className="flex flex-wrap gap-2 mb-4 items-end">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">SKU</label>
-          <input className={`${inputCls} w-24`} value={newItem.sku} onChange={(e) => setNewItem((f) => ({ ...f, sku: e.target.value }))} />
+          <label className="block text-xs text-slate-500 mb-1">SKU (from catalog)</label>
+          <select className={`${inputCls} w-48`} value={newItem.sku} onChange={(e) => handleSkuSelect(e.target.value)}>
+            <option value="">— type manually below —</option>
+            {products.map((p) => (
+              <option key={p.sku} value={p.sku}>
+                {p.sku} — {p.product_name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Продукт</label>
+          <label className="block text-xs text-slate-500 mb-1">Product</label>
           <input
-            className={`${inputCls} w-56`}
+            className={`${inputCls} w-48`}
             value={newItem.product_name}
             onChange={(e) => setNewItem((f) => ({ ...f, product_name: e.target.value }))}
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Кол-во</label>
+          <label className="block text-xs text-slate-500 mb-1">Qty</label>
           <input
             type="number"
             className={`${inputCls} w-20`}
@@ -90,7 +132,7 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Цена</label>
+          <label className="block text-xs text-slate-500 mb-1">Price (List − {dealerDiscount}%)</label>
           <input
             type="number"
             step="0.01"
@@ -100,20 +142,20 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
           />
         </div>
         <button disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
-          + Добавить позицию
+          + Add Item
         </button>
       </form>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-4">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">SKU</th>
-              <th className="text-left px-4 py-3">Продукт</th>
-              <th className="text-right px-4 py-3">Кол-во</th>
-              <th className="text-right px-4 py-3">Цена</th>
-              <th className="text-right px-4 py-3">Сумма</th>
-              <th className="text-left px-4 py-3">Статус</th>
+              <th className="text-left px-4 py-3">Product</th>
+              <th className="text-right px-4 py-3">Qty</th>
+              <th className="text-right px-4 py-3">Price</th>
+              <th className="text-right px-4 py-3">Total</th>
+              <th className="text-left px-4 py-3">Status</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -140,7 +182,7 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => deleteItem(i.id)} className="text-xs text-slate-400 hover:text-red-600">
-                    удалить
+                    delete
                   </button>
                 </td>
               </tr>
@@ -148,7 +190,7 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
             {items.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center py-8 text-slate-400">
-                  Позиций пока нет — добавьте первую выше
+                  No items yet — add the first one above
                 </td>
               </tr>
             )}
@@ -156,15 +198,15 @@ export default function OrderItemsManager({ orderId, items, currency }: { orderI
         </table>
       </div>
 
-      <div className="flex gap-6 text-sm bg-slate-50 border border-slate-200 rounded-xl px-5 py-3">
+      <div className="flex flex-wrap gap-4 sm:gap-6 text-sm bg-slate-50 border border-slate-200 rounded-xl px-5 py-3">
         <div>
-          Итого (без отменённых): <span className="font-semibold">{totalActive.toLocaleString("de-DE")} {currency}</span>
+          Total (excl. cancelled): <span className="font-semibold">{totalActive.toLocaleString("de-DE")} {currency}</span>
         </div>
         <div className="text-emerald-700">
-          Выставлено счетов: <span className="font-semibold">{totalInvoiced.toLocaleString("de-DE")} {currency}</span>
+          Invoiced: <span className="font-semibold">{totalInvoiced.toLocaleString("de-DE")} {currency}</span>
         </div>
         <div className="text-amber-700">
-          Ждёт счёта: <span className="font-semibold">{totalWaiting.toLocaleString("de-DE")} {currency}</span>
+          Waiting: <span className="font-semibold">{totalWaiting.toLocaleString("de-DE")} {currency}</span>
         </div>
       </div>
     </div>

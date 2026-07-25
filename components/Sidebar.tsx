@@ -9,7 +9,10 @@ import {
   Package,
   ShoppingCart,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const items = [
@@ -24,6 +27,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [open, setOpen] = useState(false);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -31,15 +35,8 @@ export default function Sidebar() {
     router.refresh();
   }
 
-  return (
-    <aside className="w-60 shrink-0 bg-slate-900 text-slate-200 min-h-screen flex flex-col">
-      <div className="px-5 py-5 border-b border-slate-800">
-        <div className="font-semibold text-white text-sm leading-tight">
-          Dealer Management
-          <br />
-          System
-        </div>
-      </div>
+  const NavLinks = (
+    <>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);
@@ -48,6 +45,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setOpen(false)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                 active
                   ? "bg-slate-800 text-white"
@@ -66,9 +64,49 @@ export default function Sidebar() {
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white w-full"
         >
           <LogOut size={16} />
-          Выйти
+          Logout
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden flex items-center justify-between bg-slate-900 text-white px-4 py-3 sticky top-0 z-40">
+        <span className="font-semibold text-sm">Dealer Management System</span>
+        <button onClick={() => setOpen(true)} aria-label="Open menu">
+          <Menu size={22} />
+        </button>
+      </div>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="w-72 bg-slate-900 text-slate-200 flex flex-col h-full">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <span className="font-semibold text-white text-sm">Menu</span>
+              <button onClick={() => setOpen(false)} aria-label="Close menu">
+                <X size={20} />
+              </button>
+            </div>
+            {NavLinks}
+          </div>
+          <div className="flex-1 bg-black/40" onClick={() => setOpen(false)} />
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 shrink-0 bg-slate-900 text-slate-200 min-h-screen flex-col">
+        <div className="px-5 py-5 border-b border-slate-800">
+          <div className="font-semibold text-white text-sm leading-tight">
+            Dealer Management
+            <br />
+            System
+          </div>
+        </div>
+        {NavLinks}
+      </aside>
+    </>
   );
 }

@@ -10,10 +10,10 @@ export default async function NewOrderPage() {
 
   return (
     <AppShell>
-      <h1 className="text-xl font-semibold mb-6">Новый заказ</h1>
+      <h1 className="text-xl font-semibold mb-6">New Order</h1>
       {(!dealers || dealers.length === 0) && (
         <p className="text-sm text-amber-600 mb-4">
-          Сначала добавьте хотя бы одного дилера в разделе Dealers.
+          Please add at least one dealer first, in the Dealers section.
         </p>
       )}
       <OrderForm dealers={dealers ?? []} />

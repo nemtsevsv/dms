@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
 
 export default function DealerComments({
   dealerId,
@@ -32,39 +33,53 @@ export default function DealerComments({
     router.refresh();
   }
 
+  async function deleteComment(id: string) {
+    await supabase.from("dealer_comments").delete().eq("id", id);
+    router.refresh();
+  }
+
   return (
     <div>
-      <form onSubmit={addComment} className="flex gap-2 mb-4">
+      <form onSubmit={addComment} className="flex flex-col sm:flex-row gap-2 mb-4">
         <input
-          placeholder="Ваше имя"
+          placeholder="Your name"
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
-          className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          className="w-full sm:w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm min-w-0"
         />
         <input
-          placeholder="Добавить комментарий..."
+          placeholder="Add a comment..."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm min-w-0"
         />
         <button
           disabled={saving}
-          className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
+          className="w-full sm:w-auto shrink-0 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
         >
-          Добавить
+          Add
         </button>
       </form>
       <ul className="space-y-3">
         {comments.map((c) => (
-          <li key={c.id} className="border-b border-slate-100 pb-2">
-            <div className="flex justify-between text-xs text-slate-400 mb-1">
+          <li key={c.id} className="border-b border-slate-100 pb-2 group">
+            <div className="flex justify-between items-start text-xs text-slate-400 mb-1">
               <span className="font-medium text-slate-600">{c.author}</span>
-              <span>{format(new Date(c.created_at), "dd.MM.yyyy HH:mm")}</span>
+              <div className="flex items-center gap-2">
+                <span>{format(new Date(c.created_at), "dd.MM.yyyy HH:mm")}</span>
+                <button
+                  onClick={() => deleteComment(c.id)}
+                  className="text-slate-300 hover:text-red-600"
+                  aria-label="Delete comment"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
             </div>
-            <div className="text-sm">{c.text}</div>
+            <div className="text-sm break-words">{c.text}</div>
           </li>
         ))}
-        {comments.length === 0 && <p className="text-sm text-slate-400">Комментариев пока нет</p>}
+        {comments.length === 0 && <p className="text-sm text-slate-400">No comments yet</p>}
       </ul>
     </div>
   );

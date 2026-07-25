@@ -62,17 +62,17 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
-          placeholder="Поиск по названию компании..."
+          placeholder="Search by company name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         >
-          <option value="all">Все статусы</option>
+          <option value="all">All statuses</option>
           {statuses.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -84,32 +84,32 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
           onChange={(e) => setSortKey(e.target.value as any)}
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
         >
-          <option value="company_name">Сортировка: по названию</option>
-          <option value="annual_sales_plan">Сортировка: по плану продаж</option>
+          <option value="company_name">Sort by: name</option>
+          <option value="annual_sales_plan">Sort by: sales plan</option>
         </select>
         <button
           onClick={exportCsv}
-          className="ml-auto px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+          className="sm:ml-auto px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
         >
-          Экспорт в Excel/CSV
+          Export to Excel/CSV
         </button>
         <Link
           href="/dealers/new"
           className="px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800"
         >
-          + Новый дилер
+          + New Dealer
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+        <table className="w-full text-sm min-w-[650px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
-              <th className="text-left px-4 py-3">Компания</th>
-              <th className="text-left px-4 py-3">Статус</th>
-              <th className="text-left px-4 py-3">Страна</th>
-              <th className="text-left px-4 py-3">Город</th>
-              <th className="text-right px-4 py-3">Годовой план (EUR)</th>
+              <th className="text-left px-4 py-3">Company</th>
+              <th className="text-left px-4 py-3">Status</th>
+              <th className="text-left px-4 py-3">Country</th>
+              <th className="text-left px-4 py-3">City</th>
+              <th className="text-right px-4 py-3">Annual Plan (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -139,7 +139,7 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center py-8 text-slate-400">
-                  Дилеров не найдено
+                  No dealers found
                 </td>
               </tr>
             )}

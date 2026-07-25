@@ -12,6 +12,8 @@ type Task = {
   status: string;
   priority: string;
   due_date: string | null;
+  assigned_to: string | null;
+  created_by: string | null;
   dealers: { id: string; company_name: string } | null;
 };
 
@@ -45,9 +47,9 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
     <div>
       <div className="flex gap-2 mb-4">
         {[
-          { key: "open", label: "Открытые" },
-          { key: "all", label: "Все" },
-          { key: "Completed", label: "Завершённые" },
+          { key: "open", label: "Open" },
+          { key: "all", label: "All" },
+          { key: "Completed", label: "Completed" },
         ].map((f) => (
           <button
             key={f.key}
@@ -61,15 +63,16 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
         ))}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+        <table className="w-full text-sm min-w-[650px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3"></th>
-              <th className="text-left px-4 py-3">Задача</th>
-              <th className="text-left px-4 py-3">Дилер</th>
-              <th className="text-left px-4 py-3">Приоритет</th>
-              <th className="text-left px-4 py-3">Срок</th>
+              <th className="text-left px-4 py-3">Task</th>
+              <th className="text-left px-4 py-3">Dealer</th>
+              <th className="text-left px-4 py-3">Assigned To</th>
+              <th className="text-left px-4 py-3">Priority</th>
+              <th className="text-left px-4 py-3">Due Date</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +81,11 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
                 <td className="px-4 py-3">
                   <input type="checkbox" checked={t.status === "Completed"} onChange={() => toggleComplete(t)} />
                 </td>
-                <td className={`px-4 py-3 ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}>{t.title}</td>
+                <td className={`px-4 py-3 ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}>
+                  <Link href={`/tasks/${t.id}`} className="hover:underline">
+                    {t.title}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">
                   {t.dealers ? (
                     <Link href={`/dealers/${t.dealers.id}`} className="hover:underline text-slate-600">
@@ -88,14 +95,15 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
                     <span className="text-slate-300">—</span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-slate-500">{t.assigned_to || "—"}</td>
                 <td className="px-4 py-3">{t.priority}</td>
                 <td className="px-4 py-3">{t.due_date ? format(new Date(t.due_date), "dd.MM.yyyy") : "—"}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-slate-400">
-                  Задач нет
+                <td colSpan={6} className="text-center py-8 text-slate-400">
+                  No tasks
                 </td>
               </tr>
             )}

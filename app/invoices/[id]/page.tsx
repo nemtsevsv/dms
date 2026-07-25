@@ -1,0 +1,36 @@
+import { createClient } from "@/lib/supabase/server";
+import AppShell from "@/components/AppShell";
+import InvoiceHeader from "@/components/InvoiceHeader";
+import InvoiceItemsManager from "@/components/InvoiceItemsManager";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+export default async function InvoicePage({ params }: { params: { id: string } }) {
+  const supabase = createClient();
+
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("*, dealers(id, company_name), orders(id, order_number)")
+    .eq("id", params.id)
+    .single();
+  if (!invoice) notFound();
+
+  const { data: items } = await supabase.from("invoice_items").select("*").eq("invoice_id", params.id);
+
+  return (
+    <AppShell>
+      {invoice.orders && (
+        <Link href={`/orders/${invoice.orders.id}`} className="text-sm text-slate-500 hover:underline">
+          ← Back to order {invoice.orders.order_number}
+        </Link>
+      )}
+      <h1 className="text-xl font-semibold mt-2 mb-1">{invoice.invoice_number}</h1>
+      <p className="text-sm text-slate-500 mb-6">Dealer: {invoice.dealers?.company_name}</p>
+
+      <InvoiceHeader invoice={invoice} />
+      <InvoiceItemsManager invoiceId={invoice.id} items={items ?? []} currency={invoice.currency} />
+    </AppShell>
+  );
+}

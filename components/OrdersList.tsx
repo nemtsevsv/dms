@@ -23,6 +23,8 @@ const statusColors: Record<string, string> = {
 export default function OrdersList({ orders }: { orders: Order[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const filtered = useMemo(() => {
     return orders
@@ -31,40 +33,47 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
           o.order_number.toLowerCase().includes(search.toLowerCase()) ||
           o.dealers?.company_name.toLowerCase().includes(search.toLowerCase())
       )
-      .filter((o) => statusFilter === "all" || o.status === statusFilter);
-  }, [orders, search, statusFilter]);
+      .filter((o) => statusFilter === "all" || o.status === statusFilter)
+      .filter((o) => !dateFrom || o.order_date >= dateFrom)
+      .filter((o) => !dateTo || o.order_date <= dateTo);
+  }, [orders, search, statusFilter, dateFrom, dateTo]);
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
-          placeholder="Поиск по номеру заказа или дилеру..."
+          placeholder="Search by order number or dealer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-72 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-          <option value="all">Все статусы</option>
+          <option value="all">All statuses</option>
           <option value="New">New</option>
           <option value="Processing">Processing</option>
           <option value="Completed">Completed</option>
           <option value="Cancelled">Cancelled</option>
         </select>
-        <Link href="/orders/new" className="ml-auto px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800">
-          + Новый заказ
+        <div className="flex items-center gap-2">
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+          <span className="text-slate-400 text-sm">to</span>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+        </div>
+        <Link href="/orders/new" className="sm:ml-auto px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800">
+          + New Order
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+        <table className="w-full text-sm min-w-[650px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
-              <th className="text-left px-4 py-3">Номер</th>
-              <th className="text-left px-4 py-3">Дилер</th>
-              <th className="text-left px-4 py-3">Дата</th>
-              <th className="text-left px-4 py-3">Статус</th>
-              <th className="text-right px-4 py-3">Сумма</th>
-              <th className="text-right px-4 py-3">Ждёт счёта</th>
+              <th className="text-left px-4 py-3">Number</th>
+              <th className="text-left px-4 py-3">Dealer</th>
+              <th className="text-left px-4 py-3">Date</th>
+              <th className="text-left px-4 py-3">Status</th>
+              <th className="text-right px-4 py-3">Total</th>
+              <th className="text-right px-4 py-3">Waiting</th>
             </tr>
           </thead>
           <tbody>
@@ -97,7 +106,7 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-center py-8 text-slate-400">
-                  Заказов не найдено
+                  No orders found
                 </td>
               </tr>
             )}

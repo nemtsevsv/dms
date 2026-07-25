@@ -41,13 +41,13 @@ export default function OrderForm({ dealers }: { dealers: { id: string; company_
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
       <div>
-        <label className={labelCls}>Номер заказа</label>
+        <label className={labelCls}>Order Number</label>
         <input required className={inputCls} value={form.order_number} onChange={(e) => update("order_number", e.target.value)} />
       </div>
       <div>
-        <label className={labelCls}>Дилер *</label>
+        <label className={labelCls}>Dealer *</label>
         <select required className={inputCls} value={form.dealer_id} onChange={(e) => update("dealer_id", e.target.value)}>
-          <option value="">— выберите дилера —</option>
+          <option value="">— select a dealer —</option>
           {dealers.map((d) => (
             <option key={d.id} value={d.id}>
               {d.company_name}
@@ -57,11 +57,11 @@ export default function OrderForm({ dealers }: { dealers: { id: string; company_
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Дата заказа</label>
+          <label className={labelCls}>Order Date</label>
           <input type="date" className={inputCls} value={form.order_date} onChange={(e) => update("order_date", e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>Валюта</label>
+          <label className={labelCls}>Currency</label>
           <select className={inputCls} value={form.currency} onChange={(e) => update("currency", e.target.value)}>
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
@@ -70,7 +70,7 @@ export default function OrderForm({ dealers }: { dealers: { id: string; company_
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button disabled={saving || !form.dealer_id} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
-        {saving ? "Создание..." : "Создать заказ"}
+        {saving ? "Creating..." : "Create Order"}
       </button>
     </form>
   );

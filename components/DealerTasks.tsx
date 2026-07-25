@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
 
 type Task = {
   id: string;
@@ -11,6 +12,7 @@ type Task = {
   status: string;
   priority: string;
   due_date: string | null;
+  assigned_to: string | null;
 };
 
 const priorityColors: Record<string, string> = {
@@ -25,21 +27,28 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("Medium");
+  const [assignedTo, setAssignedTo] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
     setSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     await supabase.from("tasks").insert({
       dealer_id: dealerId,
       title,
       priority,
+      assigned_to: assignedTo || null,
       due_date: dueDate || null,
       status: "New",
+      created_by: user?.email ?? null,
     });
     setTitle("");
     setDueDate("");
+    setAssignedTo("");
     setSaving(false);
     router.refresh();
   }
@@ -52,14 +61,25 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
     router.refresh();
   }
 
+  async function deleteTask(id: string) {
+    await supabase.from("tasks").delete().eq("id", id);
+    router.refresh();
+  }
+
   return (
     <div>
       <form onSubmit={addTask} className="flex flex-wrap gap-2 mb-4">
         <input
-          placeholder="Новая задача..."
+          placeholder="New task..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 min-w-[180px] px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          className="flex-1 min-w-[150px] px-3 py-2 border border-slate-300 rounded-lg text-sm"
+        />
+        <input
+          placeholder="Assigned to"
+          value={assignedTo}
+          onChange={(e) => setAssignedTo(e.target.value)}
+          className="w-28 px-3 py-2 border border-slate-300 rounded-lg text-sm"
         />
         <input
           type="date"
@@ -76,27 +96,31 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
           disabled={saving}
           className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
         >
-          Добавить
+          Add
         </button>
       </form>
       <ul className="space-y-2">
         {tasks.map((t) => (
-          <li key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-2 text-sm">
-            <label className="flex items-center gap-2">
+          <li key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-2 text-sm gap-2">
+            <label className="flex items-center gap-2 min-w-0">
               <input
                 type="checkbox"
                 checked={t.status === "Completed"}
                 onChange={() => toggleComplete(t)}
               />
-              <span className={t.status === "Completed" ? "line-through text-slate-400" : ""}>{t.title}</span>
+              <span className={`truncate ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}>{t.title}</span>
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
+              {t.assigned_to && <span className="text-slate-400 hidden sm:inline">{t.assigned_to}</span>}
               <span className={priorityColors[t.priority]}>{t.priority}</span>
               {t.due_date && <span className="text-slate-400">{format(new Date(t.due_date), "dd.MM.yyyy")}</span>}
+              <button onClick={() => deleteTask(t.id)} className="text-slate-300 hover:text-red-600" aria-label="Delete task">
+                <Trash2 size={13} />
+              </button>
             </div>
           </li>
         ))}
-        {tasks.length === 0 && <p className="text-sm text-slate-400">Задач по дилеру пока нет</p>}
+        {tasks.length === 0 && <p className="text-sm text-slate-400">No tasks for this dealer yet</p>}
       </ul>
     </div>
   );

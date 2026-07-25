@@ -12,10 +12,13 @@ export default function ProductForm({ product }: { product?: any }) {
   const [form, setForm] = useState({
     sku: product?.sku ?? "",
     product_name: product?.product_name ?? "",
+    brand: product?.brand ?? "",
+    group_name: product?.group_name ?? "",
     category: product?.category ?? "",
-    purchase_price: product?.purchase_price ?? 0,
+    subgroup: product?.subgroup ?? "",
+    list_price: product?.list_price ?? 0,
     dealer_price: product?.dealer_price ?? 0,
-    retail_price: product?.retail_price ?? 0,
+    retail_price_incl_vat: product?.retail_price_incl_vat ?? 0,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,35 +52,47 @@ export default function ProductForm({ product }: { product?: any }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>SKU *</label>
           <input required className={inputCls} value={form.sku} onChange={(e) => update("sku", e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>Категория</label>
-          <input className={inputCls} value={form.category} onChange={(e) => update("category", e.target.value)} />
+          <label className={labelCls}>Brand</label>
+          <input className={inputCls} value={form.brand} onChange={(e) => update("brand", e.target.value)} />
         </div>
-        <div className="col-span-2">
-          <label className={labelCls}>Название продукта *</label>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Product Name *</label>
           <input required className={inputCls} value={form.product_name} onChange={(e) => update("product_name", e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>Закупочная цена</label>
-          <input type="number" step="0.01" className={inputCls} value={form.purchase_price} onChange={(e) => update("purchase_price", Number(e.target.value))} />
+          <label className={labelCls}>Category</label>
+          <input className={inputCls} value={form.category} onChange={(e) => update("category", e.target.value)} />
         </div>
         <div>
-          <label className={labelCls}>Цена дилера</label>
+          <label className={labelCls}>Group</label>
+          <input className={inputCls} value={form.group_name} onChange={(e) => update("group_name", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Sub-Category</label>
+          <input className={inputCls} value={form.subgroup} onChange={(e) => update("subgroup", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>List Price</label>
+          <input type="number" step="0.01" className={inputCls} value={form.list_price} onChange={(e) => update("list_price", Number(e.target.value))} />
+        </div>
+        <div>
+          <label className={labelCls}>Dealer Price</label>
           <input type="number" step="0.01" className={inputCls} value={form.dealer_price} onChange={(e) => update("dealer_price", Number(e.target.value))} />
         </div>
         <div>
-          <label className={labelCls}>Розничная цена</label>
-          <input type="number" step="0.01" className={inputCls} value={form.retail_price} onChange={(e) => update("retail_price", Number(e.target.value))} />
+          <label className={labelCls}>Retail Price incl. VAT</label>
+          <input type="number" step="0.01" className={inputCls} value={form.retail_price_incl_vat} onChange={(e) => update("retail_price_incl_vat", Number(e.target.value))} />
         </div>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
-        {saving ? "Сохранение..." : isEdit ? "Сохранить" : "Создать продукт"}
+        {saving ? "Saving..." : isEdit ? "Save" : "Create product"}
       </button>
     </form>
   );
