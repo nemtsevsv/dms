@@ -9,6 +9,13 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+const invoiceStatusColors: Record<string, string> = {
+  Draft: "bg-slate-100 text-slate-600 border-slate-300",
+  Sent: "bg-blue-100 text-blue-700 border-blue-300",
+  Paid: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  Cancelled: "bg-red-100 text-red-700 border-red-300",
+};
+
 export default async function OrderCardPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
@@ -24,6 +31,20 @@ export default async function OrderCardPage({ params }: { params: { id: string }
     .select("*")
     .eq("order_id", params.id)
     .order("created_at");
+
+  const itemIds = (items ?? []).map((i) => i.id);
+  const invoicedQtyByItem: Record<string, number> = {};
+  if (itemIds.length > 0) {
+    const { data: invItems } = await supabase
+      .from("invoice_items")
+      .select("order_item_id, quantity, invoices!inner(status)")
+      .in("order_item_id", itemIds)
+      .neq("invoices.status", "Cancelled");
+    for (const row of invItems ?? []) {
+      if (!row.order_item_id) continue;
+      invoicedQtyByItem[row.order_item_id] = (invoicedQtyByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
+    }
+  }
 
   const { data: products } = await supabase
     .from("products")
@@ -59,9 +80,10 @@ export default async function OrderCardPage({ params }: { params: { id: string }
             orderId={order.id}
             orderNumber={order.order_number}
             dealerId={order.dealers?.id}
-            dealerName={order.dealers?.company_name}
             currency={order.currency}
             items={items ?? []}
+            invoicedQtyByItem={invoicedQtyByItem}
+            orderStatus={order.status}
           />
           <OrderStatusSelect orderId={order.id} status={order.status} />
         </div>
@@ -73,7 +95,7 @@ export default async function OrderCardPage({ params }: { params: { id: string }
             <Link
               key={inv.id}
               href={`/invoices/${inv.id}`}
-              className="text-sm px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50"
+              className={`text-sm px-3 py-1.5 rounded-lg border ${invoiceStatusColors[inv.status] ?? "border-slate-300"}`}
             >
               {inv.invoice_number} · {inv.status}
             </Link>
@@ -81,9 +103,20 @@ export default async function OrderCardPage({ params }: { params: { id: string }
         </div>
       )}
 
+      {order.status === "Cancelled" && (
+        <p className="text-sm text-red-600 mb-4">This order is cancelled — all items are shown as Cancelled.</p>
+      )}
+      {order.status === "Completed" && (
+        <p className="text-sm text-blue-600 mb-4">
+          This order is completed — any quantity that was never invoiced is now treated as cancelled.
+        </p>
+      )}
+
       <OrderItemsManager
         orderId={order.id}
+        orderStatus={order.status}
         items={items ?? []}
+        invoicedQtyByItem={invoicedQtyByItem}
         currency={order.currency}
         products={products ?? []}
         dealerDiscount={dealerDiscount}

@@ -27,7 +27,16 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         </Link>
       )}
       <h1 className="text-xl font-semibold mt-2 mb-1">{invoice.invoice_number}</h1>
-      <p className="text-sm text-slate-500 mb-6">Dealer: {invoice.dealers?.company_name}</p>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+        <p className="text-sm text-slate-500">Dealer: {invoice.dealers?.company_name}</p>
+        <Link
+          href={`/invoices/${invoice.id}/print`}
+          target="_blank"
+          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+        >
+          Download PDF
+        </Link>
+      </div>
 
       <InvoiceHeader invoice={invoice} />
       <InvoiceItemsManager invoiceId={invoice.id} items={items ?? []} currency={invoice.currency} />

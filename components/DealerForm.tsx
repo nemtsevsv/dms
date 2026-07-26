@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TagMultiSelect from "./TagMultiSelect";
-
-const STATUSES = ["New", "First Contact", "Negotiation", "Contract Signing", "Active", "Inactive"];
+import { DEALER_STATUSES, dealerStatusHex } from "@/lib/statusColors";
 
 export default function DealerForm({
   dealer,
@@ -27,12 +26,14 @@ export default function DealerForm({
     phone: dealer?.phone ?? "",
     email: dealer?.email ?? "",
     assigned_manager: dealer?.assigned_manager ?? "",
-    discount_percent: dealer?.discount_percent ?? 0,
-    annual_sales_plan: dealer?.annual_sales_plan ?? 0,
     ai_notes: dealer?.ai_notes ?? "",
     product_categories: dealer?.product_categories ?? [],
     brands: dealer?.brands ?? [],
   });
+  // Kept as free text while typing so a leading "0" doesn't get stuck
+  // in front of what the user types; parsed to a number only on save.
+  const [discountText, setDiscountText] = useState(String(dealer?.discount_percent ?? 0));
+  const [planText, setPlanText] = useState(String(dealer?.annual_sales_plan ?? 0));
   const [saving, setSaving] = useState(false);
 
   function update(field: string, value: any) {
@@ -46,16 +47,22 @@ export default function DealerForm({
       data: { user },
     } = await supabase.auth.getUser();
 
+    const payload = {
+      ...form,
+      discount_percent: Number(discountText.replace(",", ".")) || 0,
+      annual_sales_plan: Number(planText.replace(",", ".")) || 0,
+    };
+
     if (isEdit) {
       await supabase
         .from("dealers")
-        .update({ ...form, updated_at: new Date().toISOString(), updated_by: user?.email ?? null })
+        .update({ ...payload, updated_at: new Date().toISOString(), updated_by: user?.email ?? null })
         .eq("id", dealer.id);
       router.push(`/dealers/${dealer.id}`);
     } else {
       const { data } = await supabase
         .from("dealers")
-        .insert({ ...form, updated_by: user?.email ?? null })
+        .insert({ ...payload, updated_by: user?.email ?? null })
         .select()
         .single();
       router.push(`/dealers/${data?.id}`);
@@ -77,11 +84,16 @@ export default function DealerForm({
         </div>
         <div>
           <label className={labelCls}>Status</label>
-          <select className={inputCls} value={form.status} onChange={(e) => update("status", e.target.value)}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: dealerStatusHex(form.status) }} />
+            <select className={inputCls} value={form.status} onChange={(e) => update("status", e.target.value)}>
+              {DEALER_STATUSES.map((s) => (
+                <option key={s.name} value={s.name} style={{ color: s.hex }}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <label className={labelCls}>Country</label>
@@ -117,11 +129,25 @@ export default function DealerForm({
         </div>
         <div>
           <label className={labelCls}>Dealer Discount %</label>
-          <input type="number" step="0.1" className={inputCls} value={form.discount_percent} onChange={(e) => update("discount_percent", Number(e.target.value))} />
+          <input
+            type="text"
+            inputMode="decimal"
+            className={inputCls}
+            value={discountText}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setDiscountText(e.target.value)}
+          />
         </div>
         <div>
-          <label className={labelCls}>Annual Sales Plan (EUR)</label>
-          <input type="number" step="1" className={inputCls} value={form.annual_sales_plan} onChange={(e) => update("annual_sales_plan", Number(e.target.value))} />
+          <label className={labelCls}>Annual Sales Plan (EUR) — current fiscal year</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            className={inputCls}
+            value={planText}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setPlanText(e.target.value)}
+          />
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
@@ -13,6 +14,7 @@ type Task = {
   priority: string;
   due_date: string | null;
   assigned_to: string | null;
+  created_by: string | null;
 };
 
 const priorityColors: Record<string, string> = {
@@ -81,36 +83,35 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
           onChange={(e) => setAssignedTo(e.target.value)}
           className="w-28 px-3 py-2 border border-slate-300 rounded-lg text-sm"
         />
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
-        />
+        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
         <select value={priority} onChange={(e) => setPriority(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
         </select>
-        <button
-          disabled={saving}
-          className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
-        >
+        <button disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
           Add
         </button>
       </form>
       <ul className="space-y-2">
         {tasks.map((t) => (
           <li key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-2 text-sm gap-2">
-            <label className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <input
                 type="checkbox"
                 checked={t.status === "Completed"}
                 onChange={() => toggleComplete(t)}
+                aria-label="Mark completed"
               />
-              <span className={`truncate ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}>{t.title}</span>
-            </label>
+              <Link
+                href={`/tasks/${t.id}`}
+                className={`truncate hover:underline ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}
+              >
+                {t.title}
+              </Link>
+            </div>
             <div className="flex items-center gap-3 shrink-0">
+              {t.created_by && <span className="text-slate-300 hidden md:inline">by {t.created_by}</span>}
               {t.assigned_to && <span className="text-slate-400 hidden sm:inline">{t.assigned_to}</span>}
               <span className={priorityColors[t.priority]}>{t.priority}</span>
               {t.due_date && <span className="text-slate-400">{format(new Date(t.due_date), "dd.MM.yyyy")}</span>}

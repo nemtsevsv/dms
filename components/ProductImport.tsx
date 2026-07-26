@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
-import { Upload } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 
 function normalizeKey(k: string) {
   return k.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -26,12 +26,29 @@ const FIELD_MAP: Record<string, string> = {
   dealerprice: "dealer_price",
 };
 
+function parsePrice(v: any): number {
+  if (v === undefined || v === null || v === "") return 0;
+  return Number(String(v).replace(",", ".")) || 0;
+}
+
 export default function ProductImport() {
   const router = useRouter();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ created: number; updated: number; skipped: number; errors: string[] } | null>(null);
+
+  function downloadTemplate() {
+    const header = ["Brand", "Group", "Category", "Sub-Category", "SKU", "Name", "List Price", "Retail Price incl VAT"];
+    const example = ["Example Brand", "Example Group", "Photo", "Cameras", "SKU-0001", "Example Product Name", "0,00", "0,00"];
+    const csv = [header, example].map((r) => r.join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "products-import-template.csv";
+    a.click();
+  }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -59,9 +76,9 @@ export default function ProductImport() {
             continue;
           }
           mapped.sku = String(mapped.sku).trim();
-          if (mapped.list_price !== undefined) mapped.list_price = Number(mapped.list_price) || 0;
-          if (mapped.retail_price_incl_vat !== undefined) mapped.retail_price_incl_vat = Number(mapped.retail_price_incl_vat) || 0;
-          if (mapped.dealer_price !== undefined) mapped.dealer_price = Number(mapped.dealer_price) || 0;
+          if (mapped.list_price !== undefined) mapped.list_price = parsePrice(mapped.list_price);
+          if (mapped.retail_price_incl_vat !== undefined) mapped.retail_price_incl_vat = parsePrice(mapped.retail_price_incl_vat);
+          if (mapped.dealer_price !== undefined) mapped.dealer_price = parsePrice(mapped.dealer_price);
           parsedRows.push(mapped);
           skus.push(mapped.sku);
         }
@@ -99,26 +116,18 @@ export default function ProductImport() {
   }
 
   return (
-    <div className="mb-4">
-      <label className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 cursor-pointer">
+    <>
+      <button onClick={downloadTemplate} type="button" className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+        <Download size={14} />
+        Template
+      </button>
+      <label className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 cursor-pointer">
         <Upload size={14} />
-        {importing ? "Importing..." : "Import from Excel/CSV"}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          onChange={handleFile}
-          className="hidden"
-          disabled={importing}
-        />
+        {importing ? "Importing..." : "Import"}
+        <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" disabled={importing} />
       </label>
-      <p className="text-xs text-slate-400 mt-1">
-        Expected columns: Brand, Group, Category, Sub-Category, SKU, List Price, Retail Price incl. VAT.
-        Existing SKUs get their prices updated, new SKUs are created, SKUs not in the file stay untouched.
-        {" "}(Save Excel files as .csv before uploading.)
-      </p>
       {result && (
-        <div className="mt-2 text-sm bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <div className="basis-full text-sm bg-slate-50 border border-slate-200 rounded-lg p-3">
           <p>
             Created: <span className="font-medium text-emerald-700">{result.created}</span> · Updated:{" "}
             <span className="font-medium text-blue-700">{result.updated}</span> · Skipped:{" "}
@@ -133,6 +142,6 @@ export default function ProductImport() {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Check } from "lucide-react";
 
 const STATUSES = ["Draft", "Sent", "Paid", "Cancelled"];
 
@@ -15,6 +16,7 @@ export default function InvoiceHeader({ invoice }: { invoice: any }) {
     status: invoice.status,
   });
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -22,9 +24,12 @@ export default function InvoiceHeader({ invoice }: { invoice: any }) {
 
   async function save() {
     setSaving(true);
+    setJustSaved(false);
     await supabase.from("invoices").update({ ...form, updated_at: new Date().toISOString() }).eq("id", invoice.id);
     setSaving(false);
+    setJustSaved(true);
     router.refresh();
+    setTimeout(() => setJustSaved(false), 2500);
   }
 
   const inputCls = "px-3 py-2 border border-slate-300 rounded-lg text-sm";
@@ -52,9 +57,16 @@ export default function InvoiceHeader({ invoice }: { invoice: any }) {
           </select>
         </div>
       </div>
-      <button onClick={save} disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
-        {saving ? "Saving..." : "Save"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
+          {saving ? "Saving..." : "Save"}
+        </button>
+        {justSaved && (
+          <span className="flex items-center gap-1 text-sm text-emerald-600">
+            <Check size={16} /> Saved
+          </span>
+        )}
+      </div>
     </div>
   );
 }

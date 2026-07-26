@@ -16,16 +16,18 @@ export default function DealerComments({
   const router = useRouter();
   const supabase = createClient();
   const [text, setText] = useState("");
-  const [author, setAuthor] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function addComment(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     setSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     await supabase.from("dealer_comments").insert({
       dealer_id: dealerId,
-      author: author || "User",
+      author: user?.email ?? "User",
       text,
     });
     setText("");
@@ -41,12 +43,6 @@ export default function DealerComments({
   return (
     <div>
       <form onSubmit={addComment} className="flex flex-col sm:flex-row gap-2 mb-4">
-        <input
-          placeholder="Your name"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          className="w-full sm:w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm min-w-0"
-        />
         <input
           placeholder="Add a comment..."
           value={text}
@@ -67,11 +63,7 @@ export default function DealerComments({
               <span className="font-medium text-slate-600">{c.author}</span>
               <div className="flex items-center gap-2">
                 <span>{format(new Date(c.created_at), "dd.MM.yyyy HH:mm")}</span>
-                <button
-                  onClick={() => deleteComment(c.id)}
-                  className="text-slate-300 hover:text-red-600"
-                  aria-label="Delete comment"
-                >
+                <button onClick={() => deleteComment(c.id)} className="text-slate-300 hover:text-red-600" aria-label="Delete comment">
                   <Trash2 size={13} />
                 </button>
               </div>

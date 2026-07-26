@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Check } from "lucide-react";
 
 type Item = {
   id: string;
@@ -16,6 +17,7 @@ type Item = {
 export default function InvoiceItemsManager({ invoiceId, items, currency }: { invoiceId: string; items: Item[]; currency: string }) {
   const router = useRouter();
   const supabase = createClient();
+  const [justSaved, setJustSaved] = useState(false);
 
   async function updateItem(id: string, field: string, value: number) {
     const item = items.find((i) => i.id === id);
@@ -23,7 +25,9 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
     const updated = { ...item, [field]: value };
     const total = (Number(updated.quantity) || 0) * (Number(updated.unit_price) || 0);
     await supabase.from("invoice_items").update({ [field]: value, total }).eq("id", id);
+    setJustSaved(true);
     router.refresh();
+    setTimeout(() => setJustSaved(false), 2000);
   }
 
   async function deleteItem(id: string) {
@@ -35,6 +39,14 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-slate-400">Changes save automatically when you leave a field</span>
+        {justSaved && (
+          <span className="flex items-center gap-1 text-sm text-emerald-600">
+            <Check size={14} /> Saved
+          </span>
+        )}
+      </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
         <table className="w-full text-sm min-w-[500px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">

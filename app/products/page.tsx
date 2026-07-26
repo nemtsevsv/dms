@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import ProductsTable from "@/components/ProductsTable";
-import ProductImport from "@/components/ProductImport";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +14,6 @@ export default async function ProductsPage() {
   return (
     <AppShell>
       <h1 className="text-xl font-semibold mb-6">Products</h1>
-      <ProductImport />
       <ProductsTable products={products ?? []} />
     </AppShell>
   );
