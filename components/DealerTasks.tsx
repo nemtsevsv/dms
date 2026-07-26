@@ -96,22 +96,23 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
       <ul className="space-y-2">
         {tasks.map((t) => (
           <li key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-2 text-sm gap-2">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <input
                 type="checkbox"
                 checked={t.status === "Completed"}
                 onChange={() => toggleComplete(t)}
                 aria-label="Mark completed"
+                className="shrink-0"
               />
               <Link
                 href={`/tasks/${t.id}`}
+                title={t.title}
                 className={`truncate hover:underline ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}
               >
                 {t.title}
               </Link>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              {t.created_by && <span className="text-slate-300 hidden md:inline">by {t.created_by}</span>}
               {t.assigned_to && <span className="text-slate-400 hidden sm:inline">{t.assigned_to}</span>}
               <span className={priorityColors[t.priority]}>{t.priority}</span>
               {t.due_date && <span className="text-slate-400">{format(new Date(t.due_date), "dd.MM.yyyy")}</span>}

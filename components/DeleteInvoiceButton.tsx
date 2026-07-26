@@ -1,0 +1,48 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Trash2 } from "lucide-react";
+
+export default function DeleteInvoiceButton({ invoiceId, orderId }: { invoiceId: string; orderId?: string }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    await supabase.from("invoices").delete().eq("id", invoiceId);
+    router.push(orderId ? `/orders/${orderId}` : "/orders");
+    router.refresh();
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-red-600">Delete this invoice?</span>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+        >
+          {deleting ? "Deleting..." : "Yes, delete"}
+        </button>
+        <button onClick={() => setConfirming(false)} className="px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50">
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="flex items-center gap-2 px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+    >
+      <Trash2 size={14} />
+      Delete Invoice
+    </button>
+  );
+}

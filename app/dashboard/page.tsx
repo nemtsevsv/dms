@@ -2,15 +2,19 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import KpiCard from "@/components/KpiCard";
 import ConversionFunnel from "@/components/ConversionFunnel";
+import MonthlySalesChart from "@/components/MonthlySalesChart";
 import Link from "next/link";
 import { format, isToday, isPast } from "date-fns";
-import { getCurrentFiscalYearBounds } from "@/lib/fiscalYear";
+import { getCurrentFiscalYearBounds, getFiscalYearRange } from "@/lib/fiscalYear";
+import { computeItemStatus } from "@/lib/orderItemStatus";
+import { achievementColorClass } from "@/lib/achievementColor";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = createClient();
   const { startStr, endStr, label } = getCurrentFiscalYearBounds();
+  const { start: fyStart } = getFiscalYearRange();
 
   const { data: dealers } = await supabase.from("dealers").select("*");
   const { data: tasks } = await supabase
@@ -19,7 +23,27 @@ export default async function DashboardPage() {
     .neq("status", "Completed")
     .neq("status", "Cancelled")
     .order("due_date", { ascending: true });
-  const { data: orders } = await supabase.from("orders").select("id");
+
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("id, status, order_date, order_items(id, quantity, total)")
+    .gte("order_date", startStr)
+    .lte("order_date", endStr);
+
+  const allItemIds = (orders ?? []).flatMap((o: any) => o.order_items.map((i: any) => i.id));
+  const invoicedQtyByItem: Record<string, number> = {};
+  if (allItemIds.length > 0) {
+    const { data: invItems } = await supabase
+      .from("invoice_items")
+      .select("order_item_id, quantity, invoices!inner(status)")
+      .in("order_item_id", allItemIds)
+      .neq("invoices.status", "Cancelled");
+    for (const row of invItems ?? []) {
+      if (!row.order_item_id) continue;
+      invoicedQtyByItem[row.order_item_id] = (invoicedQtyByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
+    }
+  }
+
   const { data: invoices } = await supabase
     .from("invoices")
     .select("dealer_id, invoice_date, status, invoice_items(total)")
@@ -35,9 +59,41 @@ export default async function DashboardPage() {
   );
   const achievementPct = totalPlan > 0 ? Math.round((actualSales / totalPlan) * 100) : 0;
 
-  const todayTasks = tasks?.filter((t) => t.due_date && isToday(new Date(t.due_date))) ?? [];
-  const overdueTasks =
-    tasks?.filter((t) => t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date))) ?? [];
+  // Build the 12 fiscal-year months (Apr → Mar) and bucket order/invoice values into them
+  const monthKeys: string[] = [];
+  const monthLabels: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(fyStart.getFullYear(), fyStart.getMonth() + i, 1);
+    monthKeys.push(`${d.getFullYear()}-${d.getMonth()}`);
+    monthLabels.push(d.toLocaleString("en", { month: "short" }));
+  }
+  const orderedByMonth: Record<string, number> = {};
+  const invoicedByMonth: Record<string, number> = {};
+
+  for (const o of orders ?? []) {
+    const d = new Date(o.order_date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    for (const item of o.order_items as any[]) {
+      const s = computeItemStatus(item.quantity, invoicedQtyByItem[item.id] ?? 0, o.status);
+      if (s.label !== "Cancelled") {
+        orderedByMonth[key] = (orderedByMonth[key] ?? 0) + (Number(item.total) || 0);
+      }
+    }
+  }
+  for (const inv of invoices ?? []) {
+    const d = new Date(inv.invoice_date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const sum = (inv.invoice_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
+    invoicedByMonth[key] = (invoicedByMonth[key] ?? 0) + sum;
+  }
+
+  const chartData = monthKeys.map((key, i) => ({
+    label: monthLabels[i],
+    ordered: orderedByMonth[key] ?? 0,
+    invoiced: invoicedByMonth[key] ?? 0,
+  }));
+
+  const dueSoonTasks = (tasks ?? []).filter((t) => t.due_date && (isToday(new Date(t.due_date)) || isPast(new Date(t.due_date))));
 
   return (
     <AppShell>
@@ -50,11 +106,13 @@ export default async function DashboardPage() {
         <KpiCard label="Total Dealers" value={totalDealers} />
         <KpiCard label="Total Orders" value={orders?.length ?? 0} />
         <KpiCard label="Actual Sales (EUR)" value={actualSales.toLocaleString("de-DE")} accent="success" />
-        <KpiCard
-          label="Target Achievement (%)"
-          value={`${achievementPct}%`}
-          hint={`${actualSales.toLocaleString("de-DE")} / ${totalPlan.toLocaleString("de-DE")} EUR`}
-        />
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="text-xs font-medium text-slate-500 mb-1">Target Achievement (%)</div>
+          <div className={`text-2xl font-semibold ${achievementColorClass(achievementPct)}`}>{achievementPct}%</div>
+          <div className="text-xs text-slate-400 mt-1">
+            {actualSales.toLocaleString("de-DE")} / {totalPlan.toLocaleString("de-DE")} EUR
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -64,34 +122,29 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-medium mb-3">Today's Tasks</h2>
-          {todayTasks.length === 0 && <p className="text-sm text-slate-400">No tasks due today</p>}
-          <ul className="space-y-2">
-            {todayTasks.map((t) => (
-              <li key={t.id} className="text-sm flex justify-between border-b border-slate-100 pb-2">
-                <Link href={`/tasks/${t.id}`} className="hover:underline">
-                  {t.title}
-                </Link>
-                <span className="text-slate-400">{(t as any).dealers?.company_name ?? ""}</span>
-              </li>
-            ))}
-          </ul>
+          <h2 className="font-medium mb-4">Ordered vs Invoiced by Month</h2>
+          <MonthlySalesChart data={chartData} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-medium mb-3 text-red-600">Overdue Tasks</h2>
-          {overdueTasks.length === 0 && <p className="text-sm text-slate-400">No overdue tasks</p>}
+          <h2 className="font-medium mb-3">Tasks Due Today &amp; Overdue</h2>
+          {dueSoonTasks.length === 0 && <p className="text-sm text-slate-400">Nothing due — all clear</p>}
           <ul className="space-y-2">
-            {overdueTasks.map((t) => (
-              <li key={t.id} className="text-sm flex justify-between border-b border-slate-100 pb-2">
-                <Link href={`/tasks/${t.id}`} className="hover:underline">
-                  {t.title}
-                </Link>
-                <span className="text-red-500">{format(new Date(t.due_date), "dd.MM.yyyy")}</span>
-              </li>
-            ))}
+            {dueSoonTasks.map((t) => {
+              const overdue = t.due_date && isPast(new Date(t.due_date)) && !isToday(new Date(t.due_date));
+              return (
+                <li key={t.id} className="text-sm flex justify-between border-b border-slate-100 pb-2">
+                  <Link href={`/tasks/${t.id}`} className={`hover:underline ${overdue ? "text-red-600 font-medium" : ""}`}>
+                    {t.title}
+                  </Link>
+                  <span className={overdue ? "text-red-500" : "text-slate-400"}>
+                    {t.due_date ? format(new Date(t.due_date), "dd.MM.yyyy") : ""}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

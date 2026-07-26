@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { dealerStatusBadge } from "@/lib/statusColors";
+import { achievementColorClass } from "@/lib/achievementColor";
 
 type Dealer = {
   id: string;
@@ -18,10 +19,14 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<"company_name" | "annual_sales_plan" | "actual_sales">("company_name");
+  const [sortKey, setSortKey] = useState<"company_name" | "annual_sales_plan" | "actual_sales" | "achievement">("company_name");
 
   const countries = Array.from(new Set(dealers.map((d) => d.country).filter(Boolean))) as string[];
   const statuses = Array.from(new Set(dealers.map((d) => d.status)));
+
+  function achievementPct(d: Dealer) {
+    return d.annual_sales_plan ? Math.round((d.actual_sales / d.annual_sales_plan) * 100) : 0;
+  }
 
   const filtered = useMemo(() => {
     return dealers
@@ -31,12 +36,13 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
       .sort((a, b) => {
         if (sortKey === "annual_sales_plan") return (b.annual_sales_plan ?? 0) - (a.annual_sales_plan ?? 0);
         if (sortKey === "actual_sales") return (b.actual_sales ?? 0) - (a.actual_sales ?? 0);
+        if (sortKey === "achievement") return achievementPct(b) - achievementPct(a);
         return a.company_name.localeCompare(b.company_name);
       });
   }, [dealers, search, statusFilter, countryFilter, sortKey]);
 
   function exportCsv() {
-    const header = ["Company", "Status", "Country", "City", "Annual Plan (EUR)", "Actual Sales (EUR)"];
+    const header = ["Company", "Status", "Country", "City", "Annual Plan (EUR)", "Actual Sales (EUR)", "Target Achievement (%)"];
     const rows = filtered.map((d) => [
       d.company_name,
       d.status,
@@ -44,9 +50,10 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
       d.city ?? "",
       String(d.annual_sales_plan ?? 0),
       String(d.actual_sales ?? 0),
+      String(achievementPct(d)),
     ]);
     const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -79,6 +86,7 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
           <option value="company_name">Sort by: name</option>
           <option value="annual_sales_plan">Sort by: sales plan</option>
           <option value="actual_sales">Sort by: actual sales</option>
+          <option value="achievement">Sort by: achievement</option>
         </select>
         <button onClick={exportCsv} className="sm:ml-auto px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
           Export to Excel/CSV
@@ -89,7 +97,7 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-sm min-w-[750px]">
+        <table className="w-full text-sm min-w-[850px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">Company</th>
@@ -98,6 +106,7 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
               <th className="text-left px-4 py-3">City</th>
               <th className="text-right px-4 py-3">Annual Plan (EUR)</th>
               <th className="text-right px-4 py-3">Actual Sales (EUR)</th>
+              <th className="text-right px-4 py-3">Target Achievement</th>
             </tr>
           </thead>
           <tbody>
@@ -117,11 +126,12 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
                 <td className="px-4 py-3 text-slate-500">{d.city}</td>
                 <td className="px-4 py-3 text-right text-slate-700">{(d.annual_sales_plan ?? 0).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-right text-slate-700">{(d.actual_sales ?? 0).toLocaleString("de-DE")}</td>
+                <td className={`px-4 py-3 text-right font-semibold ${achievementColorClass(achievementPct(d))}`}>{achievementPct(d)}%</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-400">
+                <td colSpan={7} className="text-center py-8 text-slate-400">
                   No dealers found
                 </td>
               </tr>

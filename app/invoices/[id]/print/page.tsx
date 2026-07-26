@@ -66,7 +66,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
       </div>
 
       <div className="mb-8">
-        <p className="text-xs uppercase text-slate-400 mb-1">Bill To</p>
+        <p className="text-xs uppercase text-slate-400 mb-1">Invoice to</p>
         <p className="font-semibold">{dealer?.company_name}</p>
         {dealer?.address && <p>{dealer.address}</p>}
         <p>
@@ -111,7 +111,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
         </div>
       </div>
 
-      <p className="text-xs text-slate-400">Thank you for your business.</p>
+      <p className="text-xs text-slate-400">VAT rate 0%</p>
     </div>
   );
 }

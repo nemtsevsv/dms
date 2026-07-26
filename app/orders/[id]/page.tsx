@@ -4,6 +4,7 @@ import OrderItemsManager from "@/components/OrderItemsManager";
 import OrderStatusSelect from "@/components/OrderStatusSelect";
 import OrderNumberEdit from "@/components/OrderNumberEdit";
 import CreateInvoiceButton from "@/components/CreateInvoiceButton";
+import DeleteOrderButton from "@/components/DeleteOrderButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -86,6 +87,7 @@ export default async function OrderCardPage({ params }: { params: { id: string }
             orderStatus={order.status}
           />
           <OrderStatusSelect orderId={order.id} status={order.status} />
+          <DeleteOrderButton orderId={order.id} />
         </div>
       </div>
 

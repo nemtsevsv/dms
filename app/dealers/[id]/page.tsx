@@ -42,7 +42,7 @@ export default async function DealerCardPage({ params }: { params: { id: string 
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("id, order_number, status, order_date, currency, order_items(id, quantity, total)")
+    .select("id, order_number, status, order_date, currency, order_items(id, sku, product_name, quantity, unit_price, total)")
     .eq("dealer_id", params.id)
     .order("order_date", { ascending: false });
 

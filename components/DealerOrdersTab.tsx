@@ -1,5 +1,6 @@
 import Link from "next/link";
 import KpiCard from "./KpiCard";
+import { formatThousandsRoundUp } from "@/lib/formatK";
 
 type Order = {
   id: string;
@@ -36,8 +37,8 @@ export default function DealerOrdersTab({
         <KpiCard label="Invoiced & Paid (FY)" value={`${invoicedPaidFY.toLocaleString("de-DE")}`} accent="success" />
         <KpiCard
           label="Expected Till Year End"
-          value={`${Math.max(expectedTillYearEnd, 0).toLocaleString("de-DE")}`}
-          hint={`≈ ${Math.max(expectedThisQuarter, 0).toLocaleString("de-DE")} this quarter to stay on plan`}
+          value={formatThousandsRoundUp(Math.max(expectedTillYearEnd, 0))}
+          hint={`≈ ${formatThousandsRoundUp(Math.max(expectedThisQuarter, 0))} this quarter to stay on plan`}
           accent={expectedTillYearEnd > 0 ? "warning" : "success"}
         />
       </div>

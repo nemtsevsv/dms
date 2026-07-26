@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import InvoiceHeader from "@/components/InvoiceHeader";
 import InvoiceItemsManager from "@/components/InvoiceItemsManager";
+import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -29,13 +30,16 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <h1 className="text-xl font-semibold mt-2 mb-1">{invoice.invoice_number}</h1>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <p className="text-sm text-slate-500">Dealer: {invoice.dealers?.company_name}</p>
-        <Link
-          href={`/invoices/${invoice.id}/print`}
-          target="_blank"
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
-        >
-          Download PDF
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/invoices/${invoice.id}/print`}
+            target="_blank"
+            className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+          >
+            Download PDF
+          </Link>
+          <DeleteInvoiceButton invoiceId={invoice.id} orderId={invoice.orders?.id} />
+        </div>
       </div>
 
       <InvoiceHeader invoice={invoice} />

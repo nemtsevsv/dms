@@ -17,7 +17,7 @@ type Task = {
   dealers: { id: string; company_name: string } | null;
 };
 
-export default function TasksList({ tasks }: { tasks: Task[] }) {
+export default function TasksList({ tasks, authorNames }: { tasks: Task[]; authorNames: Record<string, string> }) {
   const router = useRouter();
   const supabase = createClient();
   const [statusFilter, setStatusFilter] = useState("open");
@@ -70,6 +70,7 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
               <th className="text-left px-4 py-3"></th>
               <th className="text-left px-4 py-3">Task</th>
               <th className="text-left px-4 py-3">Dealer</th>
+              <th className="text-left px-4 py-3">Author</th>
               <th className="text-left px-4 py-3">Assigned To</th>
               <th className="text-left px-4 py-3">Priority</th>
               <th className="text-left px-4 py-3">Due Date</th>
@@ -95,6 +96,7 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
                     <span className="text-slate-300">—</span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-slate-500">{(t.created_by && authorNames[t.created_by]) || t.created_by || "—"}</td>
                 <td className="px-4 py-3 text-slate-500">{t.assigned_to || "—"}</td>
                 <td className="px-4 py-3">{t.priority}</td>
                 <td className="px-4 py-3">{t.due_date ? format(new Date(t.due_date), "dd.MM.yyyy") : "—"}</td>
@@ -102,7 +104,7 @@ export default function TasksList({ tasks }: { tasks: Task[] }) {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-400">
+                <td colSpan={7} className="text-center py-8 text-slate-400">
                   No tasks
                 </td>
               </tr>

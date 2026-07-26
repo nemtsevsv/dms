@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import UserProfileCard from "./UserProfileCard";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -58,6 +59,7 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <UserProfileCard onNavigate={() => setOpen(false)} />
       <div className="px-3 py-4 border-t border-slate-800">
         <button
           onClick={handleLogout}

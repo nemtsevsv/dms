@@ -10,7 +10,7 @@ type WaitingItem = {
 };
 
 export default function DealerWaitingItemsTab({ items, currency }: { items: WaitingItem[]; currency: string }) {
-  const totalValue = items.reduce((s, i) => s + i.value, 0);
+  const totalSum = items.reduce((s, i) => s + i.value, 0);
 
   return (
     <div>
@@ -22,7 +22,7 @@ export default function DealerWaitingItemsTab({ items, currency }: { items: Wait
               <th className="text-left px-4 py-3">SKU</th>
               <th className="text-left px-4 py-3">Product</th>
               <th className="text-right px-4 py-3">Waiting Qty</th>
-              <th className="text-right px-4 py-3">Value</th>
+              <th className="text-right px-4 py-3">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -51,7 +51,7 @@ export default function DealerWaitingItemsTab({ items, currency }: { items: Wait
       </div>
       {items.length > 0 && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-sm">
-          Total waiting value: <span className="font-semibold">{totalValue.toLocaleString("de-DE")} {currency}</span>
+          Total waiting value: <span className="font-semibold">{totalSum.toLocaleString("de-DE")} {currency}</span>
         </div>
       )}
     </div>

@@ -11,10 +11,17 @@ export default async function TasksPage() {
     .select("*, dealers(id, company_name)")
     .order("due_date", { ascending: true, nullsFirst: false });
 
+  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const authorNames: Record<string, string> = {};
+  for (const p of profiles ?? []) {
+    const name = [p.last_name, p.first_name].filter(Boolean).join(" ");
+    if (p.email && name) authorNames[p.email] = name;
+  }
+
   return (
     <AppShell>
       <h1 className="text-xl font-semibold mb-6">Tasks</h1>
-      <TasksList tasks={tasks ?? []} />
+      <TasksList tasks={tasks ?? []} authorNames={authorNames} />
     </AppShell>
   );
 }
