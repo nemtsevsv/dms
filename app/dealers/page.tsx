@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import DealerTable from "@/components/DealerTable";
 import { getCurrentFiscalYearBounds } from "@/lib/fiscalYear";
+import { buildAuthorNameMap, resolveAuthor } from "@/lib/userNames";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function DealersPage() {
 
   const { data: dealers } = await supabase
     .from("dealers")
-    .select("id, status, company_name, country, city, annual_sales_plan")
+    .select("id, status, company_name, country, city, annual_sales_plan, assigned_manager, product_categories")
     .order("company_name");
 
   const { data: invoices } = await supabase
@@ -20,6 +21,9 @@ export default async function DealersPage() {
     .neq("status", "Cancelled")
     .gte("invoice_date", startStr)
     .lte("invoice_date", endStr);
+
+  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   const actualSalesByDealer = new Map<string, number>();
   for (const inv of invoices ?? []) {
@@ -30,6 +34,8 @@ export default async function DealersPage() {
   const dealersWithSales = (dealers ?? []).map((d) => ({
     ...d,
     actual_sales: actualSalesByDealer.get(d.id) ?? 0,
+    manager_name: resolveAuthor(d.assigned_manager, authorNames),
+    product_categories: d.product_categories ?? [],
   }));
 
   return (

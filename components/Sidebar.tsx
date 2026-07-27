@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   BarChart3,
   LogOut,
-  Menu,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -78,9 +77,12 @@ export default function Sidebar() {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden flex items-center justify-between bg-slate-900 text-white px-4 py-3 sticky top-0 z-40">
-        <span className="font-semibold text-sm">Dealer Management System</span>
-        <button onClick={() => setOpen(true)} aria-label="Open menu">
-          <Menu size={22} />
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo-leica.png" alt="Leica" className="h-6 w-6 rounded-full shrink-0" />
+          <span className="font-semibold text-sm truncate">Dealer Management System</span>
+        </div>
+        <button onClick={() => setOpen(true)} aria-label="Open menu" className="shrink-0">
+          <img src="/logo-capof.png" alt="Menu" className="h-6 w-auto brightness-0 invert" />
         </button>
       </div>
 
@@ -102,11 +104,15 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 shrink-0 bg-slate-900 text-slate-200 min-h-screen flex-col">
-        <div className="px-5 py-5 border-b border-slate-800">
-          <div className="font-semibold text-white text-sm leading-tight">
-            Dealer Management
-            <br />
-            System
+        <div className="border-b border-slate-800">
+          <img src="/logo-capof.png" alt="CAPOF" className="w-full h-auto px-5 pt-5 brightness-0 invert opacity-90" />
+          <div className="flex items-center gap-2 px-5 pb-5 pt-3">
+            <img src="/logo-leica.png" alt="Leica" className="w-7 h-7 rounded-full shrink-0" />
+            <div className="font-semibold text-white text-sm leading-tight">
+              Dealer Management
+              <br />
+              System
+            </div>
           </div>
         </div>
         {NavLinks}

@@ -93,32 +93,32 @@ export default function DealerTasks({ dealerId, tasks }: { dealerId: string; tas
           Add
         </button>
       </form>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {tasks.map((t) => (
-          <li key={t.id} className="flex items-center justify-between border-b border-slate-100 pb-2 text-sm gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+          <li key={t.id} className="border-b border-slate-100 pb-3 text-sm">
+            <div className="flex items-start gap-2">
               <input
                 type="checkbox"
                 checked={t.status === "Completed"}
                 onChange={() => toggleComplete(t)}
                 aria-label="Mark completed"
-                className="shrink-0"
+                className="shrink-0 mt-0.5"
               />
               <Link
                 href={`/tasks/${t.id}`}
                 title={t.title}
-                className={`truncate hover:underline ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}
+                className={`flex-1 min-w-0 line-clamp-2 hover:underline ${t.status === "Completed" ? "line-through text-slate-400" : ""}`}
               >
                 {t.title}
               </Link>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {t.assigned_to && <span className="text-slate-400 hidden sm:inline">{t.assigned_to}</span>}
-              <span className={priorityColors[t.priority]}>{t.priority}</span>
-              {t.due_date && <span className="text-slate-400">{format(new Date(t.due_date), "dd.MM.yyyy")}</span>}
-              <button onClick={() => deleteTask(t.id)} className="text-slate-300 hover:text-red-600" aria-label="Delete task">
+              <button onClick={() => deleteTask(t.id)} className="text-slate-300 hover:text-red-600 shrink-0" aria-label="Delete task">
                 <Trash2 size={13} />
               </button>
+            </div>
+            <div className="flex items-center gap-3 mt-1 pl-6 text-xs text-slate-400 flex-wrap">
+              {t.assigned_to && <span>{t.assigned_to}</span>}
+              <span className={priorityColors[t.priority]}>{t.priority}</span>
+              {t.due_date && <span>{format(new Date(t.due_date), "dd.MM.yyyy")}</span>}
             </div>
           </li>
         ))}

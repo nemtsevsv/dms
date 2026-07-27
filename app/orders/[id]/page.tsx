@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import OrderItemsManager from "@/components/OrderItemsManager";
 import OrderStatusSelect from "@/components/OrderStatusSelect";
 import OrderNumberEdit from "@/components/OrderNumberEdit";
+import OrderDateEdit from "@/components/OrderDateEdit";
 import CreateInvoiceButton from "@/components/CreateInvoiceButton";
 import DeleteOrderButton from "@/components/DeleteOrderButton";
 import CreatedByLine from "@/components/CreatedByLine";
@@ -78,7 +79,7 @@ export default async function OrderCardPage({ params }: { params: { id: string }
             <Link href={`/dealers/${order.dealers?.id}`} className="hover:underline">
               {order.dealers?.company_name}
             </Link>{" "}
-            · {order.order_date} · {order.currency} · Discount: {dealerDiscount}%
+            · <OrderDateEdit orderId={order.id} orderDate={order.order_date} /> · {order.currency} · Discount: {dealerDiscount}%
           </p>
           <CreatedByLine createdAt={order.created_at} createdBy={order.created_by} authorNames={authorNames} />
         </div>

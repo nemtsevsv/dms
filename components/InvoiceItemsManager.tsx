@@ -18,6 +18,8 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
   const router = useRouter();
   const supabase = createClient();
   const [justSaved, setJustSaved] = useState(false);
+  const [newItem, setNewItem] = useState({ sku: "", product_name: "", quantity: 1, unit_price: 0 });
+  const [adding, setAdding] = useState(false);
 
   async function updateItem(id: string, field: string, value: number) {
     const item = items.find((i) => i.id === id);
@@ -35,7 +37,25 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
     router.refresh();
   }
 
+  async function addItem() {
+    if (!newItem.product_name.trim() && !newItem.sku.trim()) return;
+    setAdding(true);
+    const total = newItem.quantity * newItem.unit_price;
+    await supabase.from("invoice_items").insert({
+      invoice_id: invoiceId,
+      sku: newItem.sku,
+      product_name: newItem.product_name || newItem.sku,
+      quantity: newItem.quantity,
+      unit_price: newItem.unit_price,
+      total,
+    });
+    setNewItem({ sku: "", product_name: "", quantity: 1, unit_price: 0 });
+    setAdding(false);
+    router.refresh();
+  }
+
   const total = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const inputCls = "px-2 py-1.5 border border-slate-200 rounded text-sm w-full";
 
   return (
     <div>
@@ -48,7 +68,7 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
         )}
       </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
-        <table className="w-full text-sm min-w-[500px]">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">SKU</th>
@@ -89,10 +109,52 @@ export default function InvoiceItemsManager({ invoiceId, items, currency }: { in
                 </td>
               </tr>
             ))}
+
+            <tr className="border-t-2 border-slate-200 bg-slate-50">
+              <td className="px-3 py-2">
+                <input placeholder="SKU" className={inputCls} value={newItem.sku} onChange={(e) => setNewItem((f) => ({ ...f, sku: e.target.value }))} />
+              </td>
+              <td className="px-3 py-2">
+                <input
+                  placeholder="Product name"
+                  className={inputCls}
+                  value={newItem.product_name}
+                  onChange={(e) => setNewItem((f) => ({ ...f, product_name: e.target.value }))}
+                />
+              </td>
+              <td className="px-3 py-2">
+                <input
+                  type="number"
+                  className={inputCls + " text-right"}
+                  value={newItem.quantity}
+                  onChange={(e) => setNewItem((f) => ({ ...f, quantity: Number(e.target.value) }))}
+                />
+              </td>
+              <td className="px-3 py-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  className={inputCls + " text-right"}
+                  value={newItem.unit_price}
+                  onChange={(e) => setNewItem((f) => ({ ...f, unit_price: Number(e.target.value) }))}
+                />
+              </td>
+              <td className="px-3 py-2 text-right text-slate-500">{(newItem.quantity * newItem.unit_price).toLocaleString("de-DE")}</td>
+              <td className="px-3 py-2 text-right">
+                <button
+                  onClick={addItem}
+                  disabled={adding || (!newItem.sku.trim() && !newItem.product_name.trim())}
+                  className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs hover:bg-slate-800 disabled:opacity-50"
+                >
+                  + Add
+                </button>
+              </td>
+            </tr>
+
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-400">
-                  No items on this invoice
+                <td colSpan={6} className="text-center py-4 text-slate-400 text-xs">
+                  No items yet — add one below
                 </td>
               </tr>
             )}

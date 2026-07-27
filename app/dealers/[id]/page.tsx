@@ -66,18 +66,15 @@ export default async function DealerCardPage({ params }: { params: { id: string 
   }
 
   const { startStr, endStr, label: fyLabel } = getCurrentFiscalYearBounds();
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("status, invoice_date, invoice_items(total)")
-    .eq("dealer_id", params.id)
-    .eq("status", "Paid")
-    .gte("invoice_date", startStr)
-    .lte("invoice_date", endStr);
+  const { data: paidItems } = await supabase
+    .from("invoice_items")
+    .select("total, invoices!inner(dealer_id, status, invoice_date)")
+    .eq("invoices.dealer_id", params.id)
+    .eq("invoices.status", "Paid")
+    .gte("invoices.invoice_date", startStr)
+    .lte("invoices.invoice_date", endStr);
 
-  const invoicedPaidFY = (invoices ?? []).reduce(
-    (s, inv) => s + (inv.invoice_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0),
-    0
-  );
+  const invoicedPaidFY = (paidItems ?? []).reduce((s, it: any) => s + (Number(it.total) || 0), 0);
 
   const annualPlan = Number(dealer.annual_sales_plan) || 0;
   const expectedTillYearEnd = annualPlan - invoicedPaidFY;

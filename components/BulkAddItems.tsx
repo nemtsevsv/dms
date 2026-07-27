@@ -1,0 +1,194 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ClipboardPaste, X } from "lucide-react";
+
+type Product = { sku: string; product_name: string; list_price: number | null };
+
+type PreviewRow = {
+  sku: string;
+  product_name: string;
+  quantity: number;
+  list_price: number;
+  matched: boolean;
+};
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function parseLine(line: string): string[] {
+  let parts = line.split("\t");
+  if (parts.length < 2) parts = line.split(",");
+  return parts.map((p) => p.trim());
+}
+
+export default function BulkAddItems({
+  orderId,
+  products,
+  dealerDiscount,
+  onDone,
+}: {
+  orderId: string;
+  products: Product[];
+  dealerDiscount: number;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [preview, setPreview] = useState<PreviewRow[] | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const productBySku = new Map(products.map((p) => [p.sku.toLowerCase(), p]));
+
+  function buildPreview() {
+    const rows: PreviewRow[] = [];
+    for (const rawLine of text.split("\n")) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const [skuRaw, productRaw, qtyRaw, priceRaw] = parseLine(line);
+      const sku = (skuRaw ?? "").trim();
+      if (!sku) continue;
+      const match = productBySku.get(sku.toLowerCase());
+      const quantity = Number((qtyRaw ?? "").replace(",", ".")) || 0;
+      const listPrice = priceRaw && priceRaw.trim() ? Number(priceRaw.replace(",", ".")) || 0 : match?.list_price ?? 0;
+      const productName = productRaw && productRaw.trim() ? productRaw.trim() : match?.product_name ?? sku;
+      rows.push({ sku, product_name: productName, quantity, list_price: listPrice, matched: !!match });
+    }
+    setPreview(rows);
+  }
+
+  async function confirmAdd() {
+    if (!preview || preview.length === 0) return;
+    setSaving(true);
+    const rows = preview.map((r) => {
+      const unit_price = round2(r.list_price * (1 - dealerDiscount / 100));
+      return {
+        order_id: orderId,
+        sku: r.sku,
+        product_name: r.product_name,
+        quantity: r.quantity,
+        list_price: r.list_price,
+        dealer_discount_percent: dealerDiscount,
+        unit_price,
+        total: round2(r.quantity * unit_price),
+      };
+    });
+    await supabase.from("order_items").insert(rows);
+    setSaving(false);
+    setText("");
+    setPreview(null);
+    setOpen(false);
+    router.refresh();
+    onDone();
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 mb-3"
+      >
+        <ClipboardPaste size={14} />
+        Paste list of items
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium">Paste a list of items</h3>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setPreview(null);
+            setText("");
+          }}
+          className="text-slate-400 hover:text-slate-700"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <p className="text-xs text-slate-500 mb-2">
+        Paste rows copied from Excel: <strong>SKU, Product (optional), Qty, List Price (optional)</strong>, one item per line.
+        If Product or List Price are left empty, they're pulled automatically from the Products catalog by SKU.
+      </p>
+      <textarea
+        rows={6}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setPreview(null);
+        }}
+        placeholder={"SKU-001\tCamera X\t5\t1200\nSKU-002\t\t2\t"}
+        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono mb-2"
+      />
+      {!preview ? (
+        <button
+          onClick={buildPreview}
+          disabled={!text.trim()}
+          className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
+        >
+          Preview
+        </button>
+      ) : (
+        <div>
+          <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto mb-3">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-100 text-slate-500 uppercase">
+                <tr>
+                  <th className="text-left px-2 py-1.5">SKU</th>
+                  <th className="text-left px-2 py-1.5">Product</th>
+                  <th className="text-right px-2 py-1.5">Qty</th>
+                  <th className="text-right px-2 py-1.5">List Price</th>
+                  <th className="text-left px-2 py-1.5">Catalog Match</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map((r, idx) => (
+                  <tr key={idx} className="border-t border-slate-100">
+                    <td className="px-2 py-1.5 font-mono">{r.sku}</td>
+                    <td className="px-2 py-1.5">{r.product_name}</td>
+                    <td className="px-2 py-1.5 text-right">{r.quantity}</td>
+                    <td className="px-2 py-1.5 text-right">{r.list_price.toLocaleString("de-DE")}</td>
+                    <td className="px-2 py-1.5">
+                      {r.matched ? (
+                        <span className="text-emerald-600">Found</span>
+                      ) : (
+                        <span className="text-amber-600">Not found — check price manually</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {preview.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-slate-400">
+                      No valid rows found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={confirmAdd}
+              disabled={saving || preview.length === 0}
+              className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50"
+            >
+              {saving ? "Adding..." : `Add ${preview.length} item${preview.length === 1 ? "" : "s"}`}
+            </button>
+            <button onClick={() => setPreview(null)} className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">
+              Edit list
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
