@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TagMultiSelect from "./TagMultiSelect";
 import { DEALER_STATUSES, dealerStatusHex } from "@/lib/statusColors";
+import { ExternalLink } from "lucide-react";
+
+const planFormatter = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+const discountFormatter = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function parseLocaleNumber(s: string): number {
+  return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+}
 
 export default function DealerForm({
   dealer,
@@ -30,11 +38,27 @@ export default function DealerForm({
     product_categories: dealer?.product_categories ?? [],
     brands: dealer?.brands ?? [],
   });
-  // Kept as free text while typing so a leading "0" doesn't get stuck
-  // in front of what the user types; parsed to a number only on save.
-  const [discountText, setDiscountText] = useState(String(dealer?.discount_percent ?? 0));
-  const [planText, setPlanText] = useState(String(dealer?.annual_sales_plan ?? 0));
+  // Kept as text so the fields can show locale-formatted numbers
+  // (thousands "." for the plan, decimal "," for the discount) while
+  // still being easy to edit — reformatted on blur, parsed on save.
+  const [discountText, setDiscountText] = useState(discountFormatter.format(dealer?.discount_percent ?? 0));
+  const [planText, setPlanText] = useState(planFormatter.format(dealer?.annual_sales_plan ?? 0));
+  const [managers, setManagers] = useState<{ email: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("email, first_name, last_name")
+      .then(({ data }) => {
+        setManagers(
+          (data ?? []).map((p: any) => ({
+            email: p.email,
+            name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email,
+          }))
+        );
+      });
+  }, []);
 
   function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -49,8 +73,8 @@ export default function DealerForm({
 
     const payload = {
       ...form,
-      discount_percent: Number(discountText.replace(",", ".")) || 0,
-      annual_sales_plan: Number(planText.replace(",", ".")) || 0,
+      discount_percent: parseLocaleNumber(discountText),
+      annual_sales_plan: parseLocaleNumber(planText),
     };
 
     if (isEdit) {
@@ -74,6 +98,13 @@ export default function DealerForm({
   const inputCls =
     "w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-300";
   const labelCls = "block text-xs font-medium text-slate-500 mb-1";
+
+  // If the dealer's current manager isn't in the profiles list (e.g. typed
+  // manually before this feature existed), keep it selectable so nothing breaks.
+  const managerOptions =
+    form.assigned_manager && !managers.some((m) => m.email === form.assigned_manager)
+      ? [...managers, { email: form.assigned_manager, name: form.assigned_manager }]
+      : managers;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
@@ -109,11 +140,31 @@ export default function DealerForm({
         </div>
         <div>
           <label className={labelCls}>Website</label>
-          <input className={inputCls} value={form.website} onChange={(e) => update("website", e.target.value)} />
+          <div className="flex items-center gap-2">
+            <input className={inputCls} value={form.website} onChange={(e) => update("website", e.target.value)} />
+            {form.website && (
+              <a
+                href={form.website.startsWith("http") ? form.website : `https://${form.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-slate-700 shrink-0"
+                title="Open website"
+              >
+                <ExternalLink size={16} />
+              </a>
+            )}
+          </div>
         </div>
         <div>
           <label className={labelCls}>Assigned Manager</label>
-          <input className={inputCls} value={form.assigned_manager} onChange={(e) => update("assigned_manager", e.target.value)} />
+          <select className={inputCls} value={form.assigned_manager} onChange={(e) => update("assigned_manager", e.target.value)}>
+            <option value="">— none —</option>
+            {managerOptions.map((m) => (
+              <option key={m.email} value={m.email}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className={labelCls}>Contact Person</label>
@@ -136,6 +187,7 @@ export default function DealerForm({
             value={discountText}
             onFocus={(e) => e.target.select()}
             onChange={(e) => setDiscountText(e.target.value)}
+            onBlur={() => setDiscountText(discountFormatter.format(parseLocaleNumber(discountText)))}
           />
         </div>
         <div>
@@ -147,6 +199,7 @@ export default function DealerForm({
             value={planText}
             onFocus={(e) => e.target.select()}
             onChange={(e) => setPlanText(e.target.value)}
+            onBlur={() => setPlanText(planFormatter.format(parseLocaleNumber(planText)))}
           />
         </div>
       </div>

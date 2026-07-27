@@ -8,6 +8,7 @@ import {
   ListTodo,
   Package,
   ShoppingCart,
+  BarChart3,
   LogOut,
   Menu,
   X,
@@ -22,6 +23,7 @@ const items = [
   { href: "/products", label: "Products", icon: Package },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/tasks", label: "Tasks", icon: ListTodo },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
 export default function Sidebar() {

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import TasksList from "@/components/TasksList";
+import { buildAuthorNameMap } from "@/lib/userNames";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,7 @@ export default async function TasksPage() {
     .order("due_date", { ascending: true, nullsFirst: false });
 
   const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
-  const authorNames: Record<string, string> = {};
-  for (const p of profiles ?? []) {
-    const name = [p.last_name, p.first_name].filter(Boolean).join(" ");
-    if (p.email && name) authorNames[p.email] = name;
-  }
+  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   return (
     <AppShell>

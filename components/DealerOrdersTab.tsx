@@ -9,6 +9,7 @@ type Order = {
   order_date: string;
   currency: string;
   total: number;
+  author: string;
 };
 
 export default function DealerOrdersTab({
@@ -49,6 +50,7 @@ export default function DealerOrdersTab({
             <tr>
               <th className="text-left px-4 py-3">Order</th>
               <th className="text-left px-4 py-3">Date</th>
+              <th className="text-left px-4 py-3">Author</th>
               <th className="text-left px-4 py-3">Status</th>
               <th className="text-right px-4 py-3">Total</th>
             </tr>
@@ -62,6 +64,7 @@ export default function DealerOrdersTab({
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-slate-500">{o.order_date}</td>
+                <td className="px-4 py-3 text-slate-500">{o.author}</td>
                 <td className="px-4 py-3 text-slate-500">{o.status}</td>
                 <td className="px-4 py-3 text-right">
                   {o.total.toLocaleString("de-DE")} {o.currency}
@@ -70,7 +73,7 @@ export default function DealerOrdersTab({
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center py-8 text-slate-400">
+                <td colSpan={5} className="text-center py-8 text-slate-400">
                   No orders yet
                 </td>
               </tr>

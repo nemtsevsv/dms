@@ -27,3 +27,14 @@ export function getCurrentFiscalQuarter(referenceDate: Date = new Date()) {
 export function remainingFiscalQuarters(referenceDate: Date = new Date()) {
   return 4 - getCurrentFiscalQuarter(referenceDate) + 1;
 }
+
+// quartersAgo = 0 → current fiscal quarter, 1 → previous quarter, etc.
+export function getFiscalQuarterBounds(quartersAgo: number = 0, referenceDate: Date = new Date()) {
+  const { start: fyStart } = getFiscalYearRange(referenceDate);
+  const currentQ = getCurrentFiscalQuarter(referenceDate); // 1..4
+  const targetIndex = currentQ - 1 - quartersAgo; // 0-based offset from FY start, can go negative
+  const start = new Date(fyStart.getFullYear(), fyStart.getMonth() + targetIndex * 3, 1);
+  const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+  const qNum = (((targetIndex % 4) + 4) % 4) + 1;
+  return { start, end, startStr: toDateStr(start), endStr: toDateStr(end), label: `Q${qNum} ${start.getFullYear()}` };
+}

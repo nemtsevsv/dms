@@ -5,6 +5,8 @@ import OrderStatusSelect from "@/components/OrderStatusSelect";
 import OrderNumberEdit from "@/components/OrderNumberEdit";
 import CreateInvoiceButton from "@/components/CreateInvoiceButton";
 import DeleteOrderButton from "@/components/DeleteOrderButton";
+import CreatedByLine from "@/components/CreatedByLine";
+import { buildAuthorNameMap } from "@/lib/userNames";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -58,6 +60,9 @@ export default async function OrderCardPage({ params }: { params: { id: string }
     .eq("order_id", params.id)
     .order("created_at", { ascending: false });
 
+  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const authorNames = buildAuthorNameMap(profiles ?? []);
+
   const dealerDiscount = order.dealers?.discount_percent ?? 0;
 
   return (
@@ -75,6 +80,7 @@ export default async function OrderCardPage({ params }: { params: { id: string }
             </Link>{" "}
             · {order.order_date} · {order.currency} · Discount: {dealerDiscount}%
           </p>
+          <CreatedByLine createdAt={order.created_at} createdBy={order.created_by} authorNames={authorNames} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <CreateInvoiceButton

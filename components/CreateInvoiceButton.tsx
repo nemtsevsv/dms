@@ -40,6 +40,9 @@ export default function CreateInvoiceButton({
 
   async function createInvoice() {
     setCreating(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const { data: invoice, error } = await supabase
       .from("invoices")
       .insert({
@@ -47,6 +50,7 @@ export default function CreateInvoiceButton({
         order_id: orderId,
         dealer_id: dealerId,
         currency,
+        created_by: user?.email ?? null,
       })
       .select()
       .single();

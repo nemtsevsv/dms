@@ -3,6 +3,8 @@ import AppShell from "@/components/AppShell";
 import InvoiceHeader from "@/components/InvoiceHeader";
 import InvoiceItemsManager from "@/components/InvoiceItemsManager";
 import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
+import CreatedByLine from "@/components/CreatedByLine";
+import { buildAuthorNameMap } from "@/lib/userNames";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -19,6 +21,8 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   if (!invoice) notFound();
 
   const { data: items } = await supabase.from("invoice_items").select("*").eq("invoice_id", params.id);
+  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   return (
     <AppShell>
@@ -30,6 +34,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <h1 className="text-xl font-semibold mt-2 mb-1">{invoice.invoice_number}</h1>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <p className="text-sm text-slate-500">Dealer: {invoice.dealers?.company_name}</p>
+        <CreatedByLine createdAt={invoice.created_at} createdBy={invoice.created_by} authorNames={authorNames} />
         <div className="flex items-center gap-2">
           <Link
             href={`/invoices/${invoice.id}/print`}

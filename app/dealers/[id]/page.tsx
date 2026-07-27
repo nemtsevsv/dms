@@ -7,12 +7,14 @@ import DealerHistory from "@/components/DealerHistory";
 import DealerTabs from "@/components/DealerTabs";
 import DealerOrdersTab from "@/components/DealerOrdersTab";
 import DealerWaitingItemsTab from "@/components/DealerWaitingItemsTab";
+import DealerQuickStats from "@/components/DealerQuickStats";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDuration } from "@/lib/formatDuration";
 import { getCurrentFiscalYearBounds, remainingFiscalQuarters } from "@/lib/fiscalYear";
 import { computeItemStatus } from "@/lib/orderItemStatus";
 import { dealerStatusBadge } from "@/lib/statusColors";
+import { buildAuthorNameMap, resolveAuthor } from "@/lib/userNames";
 
 export const dynamic = "force-dynamic";
 
@@ -42,9 +44,12 @@ export default async function DealerCardPage({ params }: { params: { id: string 
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("id, order_number, status, order_date, currency, order_items(id, sku, product_name, quantity, unit_price, total)")
+    .select("id, order_number, status, order_date, currency, created_by, order_items(id, sku, product_name, quantity, unit_price, total)")
     .eq("dealer_id", params.id)
     .order("order_date", { ascending: false });
+
+  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   const allItemIds = (orders ?? []).flatMap((o: any) => o.order_items.map((i: any) => i.id));
   const invoicedQtyByItem: Record<string, number> = {};
@@ -99,7 +104,15 @@ export default async function DealerCardPage({ params }: { params: { id: string 
       }
     }
     ordersTotal += total;
-    return { id: o.id, order_number: o.order_number, status: o.status, order_date: o.order_date, currency: o.currency, total };
+    return {
+      id: o.id,
+      order_number: o.order_number,
+      status: o.status,
+      order_date: o.order_date,
+      currency: o.currency,
+      total,
+      author: resolveAuthor(o.created_by, authorNames),
+    };
   });
 
   return (
@@ -122,6 +135,11 @@ export default async function DealerCardPage({ params }: { params: { id: string 
 
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <DealerQuickStats
+              ordersCount={ordersForTab.length}
+              actualSales={invoicedPaidFY}
+              achievementPct={annualPlan > 0 ? Math.round((invoicedPaidFY / annualPlan) * 100) : 0}
+            />
             <h2 className="font-medium mb-3">Tasks</h2>
             <DealerTasks dealerId={dealer.id} tasks={tasks ?? []} />
           </div>

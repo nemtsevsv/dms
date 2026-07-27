@@ -25,7 +25,14 @@ export default function OrderForm({ dealers }: { dealers: { id: string; company_
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const { data, error } = await supabase.from("orders").insert({ ...form, status: "New" }).select().single();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({ ...form, status: "New", created_by: user?.email ?? null })
+      .select()
+      .single();
     if (error) {
       setError(error.message);
       setSaving(false);
