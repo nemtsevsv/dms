@@ -9,16 +9,13 @@ export default function MonthlySalesChart({ data }: { data: MonthData[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-slate-400 inline-block" /> Ordered
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Invoiced
-          </span>
-        </div>
-        <span className="text-[10px] text-slate-400">Y-axis max: {formatThousandsRoundUp(max)} EUR</span>
+      <div className="flex items-center gap-4 text-xs mb-3">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-slate-400 inline-block" /> Ordered
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Invoiced
+        </span>
       </div>
       <div className="flex items-end gap-2 h-48">
         {data.map((d) => (

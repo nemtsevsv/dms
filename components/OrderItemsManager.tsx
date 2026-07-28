@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { computeItemStatus } from "@/lib/orderItemStatus";
 import { Trash2 } from "lucide-react";
-import BulkAddItems from "./BulkAddItems";
 
 type Item = {
   id: string;
@@ -139,7 +138,6 @@ export default function OrderItemsManager({
 
   return (
     <div>
-      <BulkAddItems orderId={orderId} products={products} dealerDiscount={dealerDiscount} onDone={() => {}} />
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
         <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">

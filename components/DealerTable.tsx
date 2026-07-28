@@ -5,6 +5,7 @@ import Link from "next/link";
 import { dealerStatusBadge, DEALER_STATUSES } from "@/lib/statusColors";
 import { achievementColorClass } from "@/lib/achievementColor";
 import MultiSelectDropdown from "./MultiSelectDropdown";
+import ColumnFilterHeader from "./ColumnFilterHeader";
 
 type Dealer = {
   id: string;
@@ -18,15 +19,20 @@ type Dealer = {
   product_categories: string[];
 };
 
+function applyFilter(value: string, selected: string[]) {
+  return selected.length === 0 || (selected.length === 1 && selected[0] === "__none__" ? false : selected.includes(value));
+}
+
+type SortKey = "company_name" | "status" | "manager" | "annual_sales_plan" | "actual_sales" | "achievement";
+
 export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [managerFilter, setManagerFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<"company_name" | "status" | "manager" | "annual_sales_plan" | "actual_sales" | "achievement">(
-    "company_name"
-  );
+  const [sortKey, setSortKey] = useState<SortKey>("company_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const countries = Array.from(new Set(dealers.map((d) => d.country).filter(Boolean))) as string[];
   const statuses = DEALER_STATUSES.map((s) => s.name).filter((s) => dealers.some((d) => d.status === s));
@@ -37,22 +43,28 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
     return d.annual_sales_plan ? Math.round((d.actual_sales / d.annual_sales_plan) * 100) : 0;
   }
 
+  function handleSort(key: SortKey, dir: "asc" | "desc") {
+    setSortKey(key);
+    setSortDir(dir);
+  }
+
   const filtered = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
     return dealers
       .filter((d) => d.company_name.toLowerCase().includes(search.toLowerCase()))
-      .filter((d) => statusFilter.length === 0 || statusFilter.includes(d.status))
-      .filter((d) => countryFilter.length === 0 || (d.country && countryFilter.includes(d.country)))
-      .filter((d) => managerFilter.length === 0 || managerFilter.includes(d.manager_name))
+      .filter((d) => applyFilter(d.status, statusFilter))
+      .filter((d) => applyFilter(d.country ?? "", countryFilter))
+      .filter((d) => applyFilter(d.manager_name, managerFilter))
       .filter((d) => categoryFilter.length === 0 || d.product_categories.some((c) => categoryFilter.includes(c)))
       .sort((a, b) => {
-        if (sortKey === "annual_sales_plan") return (b.annual_sales_plan ?? 0) - (a.annual_sales_plan ?? 0);
-        if (sortKey === "actual_sales") return (b.actual_sales ?? 0) - (a.actual_sales ?? 0);
-        if (sortKey === "achievement") return achievementPct(b) - achievementPct(a);
-        if (sortKey === "status") return a.status.localeCompare(b.status);
-        if (sortKey === "manager") return a.manager_name.localeCompare(b.manager_name);
-        return a.company_name.localeCompare(b.company_name);
+        if (sortKey === "annual_sales_plan") return ((a.annual_sales_plan ?? 0) - (b.annual_sales_plan ?? 0)) * dir;
+        if (sortKey === "actual_sales") return ((a.actual_sales ?? 0) - (b.actual_sales ?? 0)) * dir;
+        if (sortKey === "achievement") return (achievementPct(a) - achievementPct(b)) * dir;
+        if (sortKey === "status") return a.status.localeCompare(b.status) * dir;
+        if (sortKey === "manager") return a.manager_name.localeCompare(b.manager_name) * dir;
+        return a.company_name.localeCompare(b.company_name) * dir;
       });
-  }, [dealers, search, statusFilter, countryFilter, managerFilter, categoryFilter, sortKey]);
+  }, [dealers, search, statusFilter, countryFilter, managerFilter, categoryFilter, sortKey, sortDir]);
 
   function exportCsv() {
     const header = ["Company", "Status", "Country", "City", "Manager", "Annual Plan (EUR)", "Actual Sales (EUR)", "Target Achievement (%)"];
@@ -84,59 +96,109 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
           onChange={(e) => setSearch(e.target.value)}
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
-        <MultiSelectDropdown label="Status" options={statuses} selected={statusFilter} onChange={setStatusFilter} />
-        <MultiSelectDropdown label="Country" options={countries} selected={countryFilter} onChange={setCountryFilter} />
-        <MultiSelectDropdown label="Manager" options={managers} selected={managerFilter} onChange={setManagerFilter} />
         <MultiSelectDropdown label="Categories" options={categories} selected={categoryFilter} onChange={setCategoryFilter} />
-        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-          <option value="company_name">Sort: Name</option>
-          <option value="status">Sort: Status</option>
-          <option value="manager">Sort: Manager</option>
-          <option value="annual_sales_plan">Sort: Sales Plan</option>
-          <option value="actual_sales">Sort: Actual Sales</option>
-          <option value="achievement">Sort: Achievement</option>
-        </select>
-        <button onClick={exportCsv} className="sm:ml-auto px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+        <button onClick={exportCsv} className="sm:ml-auto px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 whitespace-nowrap">
           Export to Excel/CSV
         </button>
-        <Link href="/dealers/new" className="px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800">
+        <Link href="/dealers/new" className="px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 whitespace-nowrap">
           + New Dealer
         </Link>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-sm min-w-[950px]">
+        <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
-              <th className="text-left px-4 py-3">Company</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Country</th>
-              <th className="text-left px-4 py-3">City</th>
-              <th className="text-left px-4 py-3">Manager</th>
-              <th className="text-right px-4 py-3">Annual Plan (EUR)</th>
-              <th className="text-right px-4 py-3">Actual Sales (EUR)</th>
-              <th className="text-right px-4 py-3">Target Achievement</th>
+              <th className="text-left px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Company"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  sortDir={sortKey === "company_name" ? sortDir : null}
+                  onSort={(dir) => handleSort("company_name", dir)}
+                />
+              </th>
+              <th className="text-left px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Status"
+                  options={statuses}
+                  selected={statusFilter}
+                  onChange={setStatusFilter}
+                  sortDir={sortKey === "status" ? sortDir : null}
+                  onSort={(dir) => handleSort("status", dir)}
+                />
+              </th>
+              <th className="text-left px-3 py-2.5">
+                <ColumnFilterHeader label="Country" options={countries} selected={countryFilter} onChange={setCountryFilter} />
+              </th>
+              <th className="text-left px-3 py-2.5">City</th>
+              <th className="text-left px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Manager"
+                  options={managers}
+                  selected={managerFilter}
+                  onChange={setManagerFilter}
+                  sortDir={sortKey === "manager" ? sortDir : null}
+                  onSort={(dir) => handleSort("manager", dir)}
+                />
+              </th>
+              <th className="text-right px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Plan"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  align="right"
+                  sortDir={sortKey === "annual_sales_plan" ? sortDir : null}
+                  onSort={(dir) => handleSort("annual_sales_plan", dir)}
+                />
+              </th>
+              <th className="text-right px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Actual Sales"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  align="right"
+                  sortDir={sortKey === "actual_sales" ? sortDir : null}
+                  onSort={(dir) => handleSort("actual_sales", dir)}
+                />
+              </th>
+              <th className="text-right px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Achievement"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  align="right"
+                  sortDir={sortKey === "achievement" ? sortDir : null}
+                  onSort={(dir) => handleSort("achievement", dir)}
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((d) => (
               <tr key={d.id} className="border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3">
+                <td className="px-3 py-2 whitespace-nowrap">
                   <Link href={`/dealers/${d.id}`} className="font-medium hover:underline">
                     {d.company_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${dealerStatusBadge(d.status)}`}>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${dealerStatusBadge(d.status)}`}>
                     {d.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{d.country}</td>
-                <td className="px-4 py-3 text-slate-500">{d.city}</td>
-                <td className="px-4 py-3 text-slate-500">{d.manager_name}</td>
-                <td className="px-4 py-3 text-right text-slate-700">{(d.annual_sales_plan ?? 0).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right text-slate-700">{(d.actual_sales ?? 0).toLocaleString("de-DE")}</td>
-                <td className={`px-4 py-3 text-right font-semibold ${achievementColorClass(achievementPct(d))}`}>{achievementPct(d)}%</td>
+                <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{d.country}</td>
+                <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{d.city}</td>
+                <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{d.manager_name}</td>
+                <td className="px-3 py-2 text-right text-slate-700 whitespace-nowrap">{(d.annual_sales_plan ?? 0).toLocaleString("de-DE")}</td>
+                <td className="px-3 py-2 text-right text-slate-700 whitespace-nowrap">{(d.actual_sales ?? 0).toLocaleString("de-DE")}</td>
+                <td className={`px-3 py-2 text-right font-semibold whitespace-nowrap ${achievementColorClass(achievementPct(d))}`}>
+                  {achievementPct(d)}%
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (

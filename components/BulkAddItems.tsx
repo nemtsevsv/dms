@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ClipboardPaste, X } from "lucide-react";
+import { X } from "lucide-react";
 
 type Product = { sku: string; product_name: string; list_price: number | null };
 
@@ -38,7 +38,6 @@ export default function BulkAddItems({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -82,21 +81,8 @@ export default function BulkAddItems({
     setSaving(false);
     setText("");
     setPreview(null);
-    setOpen(false);
     router.refresh();
     onDone();
-  }
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 mb-3"
-      >
-        <ClipboardPaste size={14} />
-        Paste list of items
-      </button>
-    );
   }
 
   return (
@@ -105,9 +91,9 @@ export default function BulkAddItems({
         <h3 className="text-sm font-medium">Paste a list of items</h3>
         <button
           onClick={() => {
-            setOpen(false);
             setPreview(null);
             setText("");
+            onDone();
           }}
           className="text-slate-400 hover:text-slate-700"
         >
