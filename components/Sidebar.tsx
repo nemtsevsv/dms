@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   BarChart3,
   LogOut,
+  Menu,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -78,11 +79,12 @@ export default function Sidebar() {
       {/* Mobile top bar */}
       <div className="md:hidden flex items-center justify-between bg-slate-900 text-white px-4 py-3 sticky top-0 z-40">
         <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo-capof.png" alt="CAPOF" className="h-6 w-auto shrink-0 brightness-0 invert opacity-90" />
           <img src="/logo-leica.png" alt="Leica" className="h-6 w-6 rounded-full shrink-0" />
           <span className="font-semibold text-sm truncate">Dealer Management System</span>
         </div>
         <button onClick={() => setOpen(true)} aria-label="Open menu" className="shrink-0">
-          <img src="/logo-capof.png" alt="Menu" className="h-6 w-auto brightness-0 invert" />
+          <Menu size={22} />
         </button>
       </div>
 
