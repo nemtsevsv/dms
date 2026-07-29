@@ -19,10 +19,41 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-function parseLine(line: string): string[] {
-  let parts = line.split("\t");
-  if (parts.length < 2) parts = line.split(",");
-  return parts.map((p) => p.trim());
+// "6.100,00" -> 6100 (European format: "." thousands separator, "," decimal)
+function parseEuropeanNumber(s: string): number {
+  if (!s) return 0;
+  return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+// Simple format used by our own template: "0,00" or "1200.50"
+function parseSimpleNumber(s: string): number {
+  if (!s) return 0;
+  return Number(s.replace(",", ".")) || 0;
+}
+
+const HEADER_WORDS = ["order-no.", "order-no", "sku"];
+
+type ParsedLine = { sku: string; product: string; qtyRaw: string; priceRaw: string; european: boolean };
+
+function parseLine(line: string): ParsedLine {
+  const parts = line.split("\t").map((p) => p.trim());
+
+  // Leica / distributor price-list export pasted straight from Excel:
+  // SKU | flag(n/e/p/d) | Description | Description | RSP incl. VAT | EAN | List Price | SN | (blank) | (blank) | Order Quantity
+  if (parts.length >= 9) {
+    return {
+      sku: parts[0] ?? "",
+      product: parts[2] ?? "",
+      priceRaw: parts[6] ?? "",
+      qtyRaw: parts[parts.length - 1] ?? "",
+      european: true,
+    };
+  }
+
+  // Our own simple format: SKU, Product (optional), Qty, List Price (optional)
+  const simpleParts = parts.length >= 2 ? parts : line.split(",").map((p) => p.trim());
+  const [sku = "", product = "", qty = "", price = ""] = simpleParts;
+  return { sku, product, qtyRaw: qty, priceRaw: price, european: false };
 }
 
 export default function BulkAddItems({
@@ -49,12 +80,18 @@ export default function BulkAddItems({
     for (const rawLine of text.split("\n")) {
       const line = rawLine.trim();
       if (!line) continue;
-      const [skuRaw, productRaw, qtyRaw, priceRaw] = parseLine(line);
-      const sku = (skuRaw ?? "").trim();
+
+      const { sku: skuRaw, product: productRaw, qtyRaw, priceRaw, european } = parseLine(line);
+      const sku = skuRaw.trim();
       if (!sku) continue;
+      if (HEADER_WORDS.includes(sku.toLowerCase())) continue; // skip a pasted header row
+
+      const parseNum = european ? parseEuropeanNumber : parseSimpleNumber;
+      const quantity = parseNum(qtyRaw);
+      if (!quantity) continue; // section headers / subtotal rows in price-list exports have no quantity
+
       const match = productBySku.get(sku.toLowerCase());
-      const quantity = Number((qtyRaw ?? "").replace(",", ".")) || 0;
-      const listPrice = priceRaw && priceRaw.trim() ? Number(priceRaw.replace(",", ".")) || 0 : match?.list_price ?? 0;
+      const listPrice = priceRaw && priceRaw.trim() ? parseNum(priceRaw) : match?.list_price ?? 0;
       const productName = productRaw && productRaw.trim() ? productRaw.trim() : match?.product_name ?? sku;
       rows.push({ sku, product_name: productName, quantity, list_price: listPrice, matched: !!match });
     }
@@ -101,9 +138,18 @@ export default function BulkAddItems({
         </button>
       </div>
       <p className="text-xs text-slate-500 mb-2">
-        Paste rows copied from Excel: <strong>SKU, Product (optional), Qty, List Price (optional)</strong>, one item per line.
-        If Product or List Price are left empty, they're pulled automatically from the Products catalog by SKU.
+        Two formats are supported — just paste as-is, no need to reformat:
       </p>
+      <ul className="text-xs text-slate-500 mb-2 list-disc pl-4 space-y-0.5">
+        <li>
+          <strong>Simple list</strong>: SKU, Product (optional), Qty, List Price (optional) — missing fields are pulled from the
+          Products catalog by SKU.
+        </li>
+        <li>
+          <strong>Distributor price-list order export</strong> (e.g. the Leica order sheet): select and copy the data rows
+          (Order-No. through Order Quantity) straight from Excel and paste them here — it's recognized automatically.
+        </li>
+      </ul>
       <textarea
         rows={6}
         value={text}
