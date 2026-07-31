@@ -80,7 +80,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
       <table className="w-full mb-8 border-collapse">
         <thead>
           <tr className="border-b-2 border-slate-800 text-xs uppercase text-slate-500">
-            <th className="text-left py-2">SKU</th>
+            <th className="text-left py-2">Order-No.</th>
             <th className="text-left py-2">Product</th>
             <th className="text-right py-2">Qty</th>
             <th className="text-right py-2">Unit Price</th>

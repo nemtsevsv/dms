@@ -19,7 +19,7 @@ export default function DealerWaitingItemsTab({ items, currency }: { items: Wait
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">Order</th>
-              <th className="text-left px-4 py-3">SKU</th>
+              <th className="text-left px-4 py-3">Order-No.</th>
               <th className="text-left px-4 py-3">Product</th>
               <th className="text-right px-4 py-3">Waiting Qty</th>
               <th className="text-right px-4 py-3">Total</th>

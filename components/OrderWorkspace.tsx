@@ -6,6 +6,7 @@ import { ClipboardPaste } from "lucide-react";
 import OrderNumberEdit from "./OrderNumberEdit";
 import OrderDateEdit from "./OrderDateEdit";
 import CreatedByLine from "./CreatedByLine";
+import FiscalYearBadge from "./FiscalYearBadge";
 import CreateInvoiceButton from "./CreateInvoiceButton";
 import OrderStatusSelect from "./OrderStatusSelect";
 import DeleteOrderButton from "./DeleteOrderButton";
@@ -51,6 +52,9 @@ export default function OrderWorkspace({
             · <OrderDateEdit orderId={order.id} orderDate={order.order_date} /> · {order.currency} · Discount: {dealerDiscount}%
           </p>
           <CreatedByLine createdAt={order.created_at} createdBy={order.created_by} authorNames={authorNames} />
+          <div className="mt-1">
+            <FiscalYearBadge />
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button

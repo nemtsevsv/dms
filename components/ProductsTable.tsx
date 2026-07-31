@@ -63,7 +63,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }
 
   function exportCsv() {
-    const header = ["Brand", "Group", "Category", "Sub-Category", "SKU", "Name", "List Price", "Dealer Price", "Retail Price incl VAT"];
+    const header = ["Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Dealer Price", "Retail Price incl VAT"];
     const rows = filtered.map((p) => [
       p.brand ?? "",
       p.group_name ?? "",
@@ -100,7 +100,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
-          placeholder="Search by SKU or name..."
+          placeholder="Search by Order-No. or name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-slate-300"
@@ -130,7 +130,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               <th className="text-left px-3 py-2.5">
                 <ColumnFilterHeader label="Sub-Category" options={subgroups} selected={subgroupFilter} onChange={setSubgroupFilter} sortDir={sortKey === "subgroup" ? sortDir : null} onSort={(dir) => handleSort("subgroup", dir)} />
               </th>
-              <th className="text-left px-3 py-2.5">{th("sku", "SKU")}</th>
+              <th className="text-left px-3 py-2.5">{th("sku", "Order-No.")}</th>
               <th className="text-left px-3 py-2.5">{th("product_name", "Name")}</th>
               <th className="text-right px-3 py-2.5">{th("list_price", "List Price", "right")}</th>
               <th className="text-right px-3 py-2.5">{th("retail_price_incl_vat", "Retail incl. VAT", "right")}</th>

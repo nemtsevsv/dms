@@ -4,6 +4,7 @@ import InvoiceHeader from "@/components/InvoiceHeader";
 import InvoiceItemsManager from "@/components/InvoiceItemsManager";
 import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
 import CreatedByLine from "@/components/CreatedByLine";
+import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { buildAuthorNameMap } from "@/lib/userNames";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -24,6 +25,38 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
   const authorNames = buildAuthorNameMap(profiles ?? []);
 
+  // Items can only be added to an invoice if they already exist on the
+  // linked order — first add to the order, then it becomes invoiceable.
+  let orderItemsForPicker: { id: string; sku: string | null; product_name: string | null; unit_price: number | null; remaining: number }[] = [];
+  if (invoice.order_id) {
+    const { data: orderItems } = await supabase
+      .from("order_items")
+      .select("id, sku, product_name, quantity, unit_price")
+      .eq("order_id", invoice.order_id);
+
+    const orderItemIds = (orderItems ?? []).map((i) => i.id);
+    const invoicedTotalByItem: Record<string, number> = {};
+    if (orderItemIds.length > 0) {
+      const { data: allInvoiceItems } = await supabase
+        .from("invoice_items")
+        .select("order_item_id, quantity, invoices!inner(status)")
+        .in("order_item_id", orderItemIds)
+        .neq("invoices.status", "Cancelled");
+      for (const row of allInvoiceItems ?? []) {
+        if (!row.order_item_id) continue;
+        invoicedTotalByItem[row.order_item_id] = (invoicedTotalByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
+      }
+    }
+
+    orderItemsForPicker = (orderItems ?? []).map((oi) => ({
+      id: oi.id,
+      sku: oi.sku,
+      product_name: oi.product_name,
+      unit_price: oi.unit_price,
+      remaining: (Number(oi.quantity) || 0) - (invoicedTotalByItem[oi.id] ?? 0),
+    }));
+  }
+
   return (
     <AppShell>
       {invoice.orders && (
@@ -35,6 +68,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <p className="text-sm text-slate-500">Dealer: {invoice.dealers?.company_name}</p>
         <CreatedByLine createdAt={invoice.created_at} createdBy={invoice.created_by} authorNames={authorNames} />
+        <FiscalYearBadge />
         <div className="flex items-center gap-2">
           <Link
             href={`/invoices/${invoice.id}/print`}
@@ -48,7 +82,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       </div>
 
       <InvoiceHeader invoice={invoice} />
-      <InvoiceItemsManager invoiceId={invoice.id} items={items ?? []} currency={invoice.currency} />
+      <InvoiceItemsManager invoiceId={invoice.id} items={items ?? []} currency={invoice.currency} orderItems={orderItemsForPicker} />
     </AppShell>
   );
 }

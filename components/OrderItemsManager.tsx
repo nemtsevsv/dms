@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { computeItemStatus } from "@/lib/orderItemStatus";
-import { Trash2 } from "lucide-react";
+import { Trash2, Download } from "lucide-react";
 
 type Item = {
   id: string;
@@ -130,6 +130,27 @@ export default function OrderItemsManager({
     return { ...i, status };
   });
 
+  function exportCsv() {
+    const header = ["Order-No.", "Product", "Qty", "List Price", "Discount %", "Dealer Price", "Total", "Status"];
+    const csvRows = rows.map((i) => [
+      i.sku ?? "",
+      i.product_name ?? "",
+      String(i.quantity ?? 0),
+      String(i.list_price ?? ""),
+      String(i.dealer_discount_percent ?? 0),
+      String(i.unit_price ?? ""),
+      String(i.total ?? ""),
+      i.status.label,
+    ]);
+    const csv = [header, ...csvRows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "order-items.csv";
+    a.click();
+  }
+
   const totalActive = rows.filter((i) => i.status.label !== "Cancelled").reduce((s, i) => s + (Number(i.total) || 0), 0);
   const totalInvoiced = rows.reduce((s, i) => s + (Number(i.total) || 0) * (i.status.invoicedQty / (Number(i.quantity) || 1)), 0);
   const totalWaiting = rows.reduce((s, i) => s + i.status.waitingQty * (Number(i.unit_price) || 0), 0);
@@ -138,12 +159,18 @@ export default function OrderItemsManager({
 
   return (
     <div>
+      <div className="flex justify-end mb-2">
+        <button onClick={exportCsv} className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+          <Download size={14} />
+          Export to Excel/CSV
+        </button>
+      </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
         <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-3 py-3 w-10">#</th>
-              <th className="text-left px-3 py-3">SKU</th>
+              <th className="text-left px-3 py-3">Order-No.</th>
               <th className="text-left px-3 py-3">Product</th>
               <th className="text-right px-3 py-3">Qty</th>
               <th className="text-right px-3 py-3">List Price</th>
@@ -177,7 +204,7 @@ export default function OrderItemsManager({
                     type="number"
                     step="0.01"
                     className={inputCls + " text-right"}
-                    defaultValue={i.list_price ?? 0}
+                    defaultValue={i.list_price ?? ""}
                     onBlur={(e) => updateItem(i, { list_price: Number(e.target.value) })}
                   />
                 </td>
@@ -209,7 +236,7 @@ export default function OrderItemsManager({
               <td className="px-3 py-2" colSpan={2}>
                 <input
                   list="products-datalist"
-                  placeholder="Search SKU or product name..."
+                  placeholder="Search Order-No. or product name..."
                   className={inputCls}
                   value={newItem.search}
                   onChange={(e) => handleSearchChange(e.target.value)}

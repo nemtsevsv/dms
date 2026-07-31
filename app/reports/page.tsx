@@ -4,6 +4,7 @@ import DealerTabs from "@/components/DealerTabs";
 import SalesReport from "./SalesReport";
 import DealerNetworkReport from "./DealerNetworkReport";
 import DealerRatings from "./DealerRatings";
+import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { buildAuthorNameMap, resolveAuthor } from "@/lib/userNames";
 import { getFiscalQuarterBounds, getCurrentFiscalYearBounds } from "@/lib/fiscalYear";
 
@@ -172,7 +173,10 @@ export default async function ReportsPage() {
 
   return (
     <AppShell>
-      <h1 className="text-xl font-semibold mb-6">Reports</h1>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+        <h1 className="text-xl font-semibold">Reports</h1>
+        <FiscalYearBadge />
+      </div>
       <DealerTabs
         tabs={[
           {

@@ -12,6 +12,8 @@ function normalizeKey(k: string) {
 
 const FIELD_MAP: Record<string, string> = {
   sku: "sku",
+  orderno: "sku",
+  ordernumber: "sku",
   brand: "brand",
   group: "group_name",
   category: "category",
@@ -39,8 +41,8 @@ export default function ProductImport() {
   const [result, setResult] = useState<{ created: number; updated: number; skipped: number; errors: string[] } | null>(null);
 
   function downloadTemplate() {
-    const header = ["Brand", "Group", "Category", "Sub-Category", "SKU", "Name", "List Price", "Retail Price incl VAT"];
-    const example = ["Example Brand", "Example Group", "Photo", "Cameras", "SKU-0001", "Example Product Name", "0,00", "0,00"];
+    const header = ["Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Retail Price incl VAT"];
+    const example = ["Example Brand", "Example Group", "Photo", "Cameras", "10001", "Example Product Name", "0,00", "0,00"];
     const csv = [header, example].map((r) => r.join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -72,7 +74,7 @@ export default function ProductImport() {
             if (field) mapped[field] = row[key];
           }
           if (!mapped.sku || !String(mapped.sku).trim()) {
-            errors.push(`Row skipped: missing SKU (${JSON.stringify(row)})`);
+            errors.push(`Row skipped: missing Order-No. (${JSON.stringify(row)})`);
             continue;
           }
           mapped.sku = String(mapped.sku).trim();

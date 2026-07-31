@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import OrdersList from "@/components/OrdersList";
+import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { computeItemStatus } from "@/lib/orderItemStatus";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,10 @@ export default async function OrdersPage() {
 
   return (
     <AppShell>
-      <h1 className="text-xl font-semibold mb-6">Orders</h1>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+        <h1 className="text-xl font-semibold">Orders</h1>
+        <FiscalYearBadge />
+      </div>
       <OrdersList orders={ordersWithStatus} />
     </AppShell>
   );

@@ -54,7 +54,7 @@ export default function ProductForm({ product }: { product?: any }) {
     <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>SKU *</label>
+          <label className={labelCls}>Order-No. *</label>
           <input required className={inputCls} value={form.sku} onChange={(e) => update("sku", e.target.value)} />
         </div>
         <div>
