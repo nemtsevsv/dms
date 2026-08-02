@@ -26,13 +26,29 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  const path = request.nextUrl.pathname;
+  const isLoginPage = path.startsWith("/login");
 
   if (!user && !isLoginPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  if (user && isLoginPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+
+  if (user) {
+    let isStoreStaff = false;
+    if (user.email) {
+      const { data } = await supabase.from("store_users").select("store_id").eq("email", user.email).maybeSingle();
+      isStoreStaff = !!data;
+    }
+
+    if (isLoginPage) {
+      return NextResponse.redirect(new URL(isStoreStaff ? "/store" : "/dashboard", request.url));
+    }
+    // Store staff can only ever see the /store area — never the admin panel,
+    // even by typing a URL directly. Admin data is also protected by RLS,
+    // this just keeps the navigation experience clean.
+    if (isStoreStaff && !path.startsWith("/store")) {
+      return NextResponse.redirect(new URL("/store", request.url));
+    }
   }
 
   return response;
