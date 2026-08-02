@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ColumnFilterHeader from "./ColumnFilterHeader";
+import { btnPrimary } from "@/lib/buttonStyles";
 
 type Order = {
   id: string;
@@ -75,7 +76,7 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
           <span className="text-slate-400 text-sm">to</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" />
         </div>
-        <Link href="/orders/new" className="sm:ml-auto px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800">
+        <Link href="/orders/new" className={btnPrimary + " sm:ml-auto"}>
           + New Order
         </Link>
       </div>

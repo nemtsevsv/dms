@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import { Upload, Download } from "lucide-react";
+import { btnNeutral, btnImport } from "@/lib/buttonStyles";
 
 function normalizeKey(k: string) {
   return k.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -119,11 +120,11 @@ export default function ProductImport() {
 
   return (
     <>
-      <button onClick={downloadTemplate} type="button" className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+      <button onClick={downloadTemplate} type="button" className={btnNeutral}>
         <Download size={14} />
         Template
       </button>
-      <label className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 cursor-pointer">
+      <label className={btnImport + " cursor-pointer"}>
         <Upload size={14} />
         {importing ? "Importing..." : "Import"}
         <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" disabled={importing} />

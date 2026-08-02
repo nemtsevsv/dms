@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ColumnFilterHeader from "./ColumnFilterHeader";
 import ProductImport from "./ProductImport";
+import { exportToXlsx } from "@/lib/exportXlsx";
+import { btnPrimary, btnExport } from "@/lib/buttonStyles";
+import { Download } from "lucide-react";
 
 type Product = {
   id: string;
@@ -62,7 +65,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     setSortDir(dir);
   }
 
-  function exportCsv() {
+  function exportXlsx() {
     const header = ["Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Dealer Price", "Retail Price incl VAT"];
     const rows = filtered.map((p) => [
       p.brand ?? "",
@@ -71,17 +74,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       p.subgroup ?? "",
       p.sku,
       p.product_name,
-      String(p.list_price ?? ""),
-      String(p.dealer_price ?? ""),
-      String(p.retail_price_incl_vat ?? ""),
+      p.list_price ?? "",
+      p.dealer_price ?? "",
+      p.retail_price_incl_vat ?? "",
     ]);
-    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "products.csv";
-    a.click();
+    exportToXlsx("products.xlsx", header, rows, "Products");
   }
 
   const th = (key: SortKey, label: string, align: "left" | "right" = "left") => (
@@ -106,10 +103,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
         <ProductImport />
-        <button onClick={exportCsv} className="px-3 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-50">
+        <button onClick={exportXlsx} className={btnExport}>
+          <Download size={14} />
           Export
         </button>
-        <Link href="/products/new" className="sm:ml-auto px-3 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800">
+        <Link href="/products/new" className={btnPrimary + " sm:ml-auto"}>
           + New Product
         </Link>
       </div>

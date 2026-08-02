@@ -6,6 +6,8 @@ import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
 import CreatedByLine from "@/components/CreatedByLine";
 import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { buildAuthorNameMap } from "@/lib/userNames";
+import { btnExport } from "@/lib/buttonStyles";
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -73,8 +75,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           <Link
             href={`/invoices/${invoice.id}/print`}
             target="_blank"
-            className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+            className={btnExport}
           >
+            <Download size={14} />
             Download PDF
           </Link>
           <DeleteInvoiceButton invoiceId={invoice.id} orderId={invoice.orders?.id} />

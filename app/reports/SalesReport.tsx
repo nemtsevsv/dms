@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
+import { exportToXlsx } from "@/lib/exportXlsx";
+import { btnExport } from "@/lib/buttonStyles";
+import { Download } from "lucide-react";
 
 type OrderRow = {
   id: string;
@@ -26,16 +29,6 @@ type InvoiceRow = {
   total: number;
   currency: string;
 };
-
-function exportCsv(filename: string, header: string[], rows: (string | number)[][]) {
-  const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-}
 
 export default function SalesReport({ orders, invoices }: { orders: OrderRow[]; invoices: InvoiceRow[] }) {
   const countries = Array.from(new Set([...orders.map((o) => o.country), ...invoices.map((i) => i.country)].filter(Boolean)));
@@ -89,15 +82,17 @@ export default function SalesReport({ orders, invoices }: { orders: OrderRow[]; 
         <h3 className="font-medium">Orders</h3>
         <button
           onClick={() =>
-            exportCsv(
-              "sales-report-orders.csv",
+            exportToXlsx(
+              "sales-report-orders.xlsx",
               ["Order Number", "Date", "Status", "Dealer", "Country", "Manager", "Total", "Currency"],
-              filteredOrders.map((o) => [o.order_number, o.order_date, o.status, o.dealer_name, o.country, o.manager, o.total, o.currency])
+              filteredOrders.map((o) => [o.order_number, o.order_date, o.status, o.dealer_name, o.country, o.manager, o.total, o.currency]),
+              "Orders"
             )
           }
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+          className={btnExport}
         >
-          Export Orders to Excel/CSV
+          <Download size={14} />
+          Export Orders
         </button>
       </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-8">
@@ -142,15 +137,17 @@ export default function SalesReport({ orders, invoices }: { orders: OrderRow[]; 
         <h3 className="font-medium">Invoices</h3>
         <button
           onClick={() =>
-            exportCsv(
-              "sales-report-invoices.csv",
+            exportToXlsx(
+              "sales-report-invoices.xlsx",
               ["Invoice Number", "Date", "Status", "Dealer", "Country", "Manager", "Total", "Currency"],
-              filteredInvoices.map((i) => [i.invoice_number, i.invoice_date, i.status, i.dealer_name, i.country, i.manager, i.total, i.currency])
+              filteredInvoices.map((i) => [i.invoice_number, i.invoice_date, i.status, i.dealer_name, i.country, i.manager, i.total, i.currency]),
+              "Invoices"
             )
           }
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
+          className={btnExport}
         >
-          Export Invoices to Excel/CSV
+          <Download size={14} />
+          Export Invoices
         </button>
       </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">

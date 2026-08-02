@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Trash2 } from "lucide-react";
+import { btnDanger } from "@/lib/buttonStyles";
 
 export default function DeleteOrderButton({ orderId }: { orderId: string }) {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function DeleteOrderButton({ orderId }: { orderId: string }) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="flex items-center gap-2 px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+      className={btnDanger}
     >
       <Trash2 size={14} />
       Delete Order

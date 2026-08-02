@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ClipboardPaste } from "lucide-react";
+import { ClipboardPaste, Download } from "lucide-react";
 import OrderNumberEdit from "./OrderNumberEdit";
 import OrderDateEdit from "./OrderDateEdit";
 import CreatedByLine from "./CreatedByLine";
@@ -12,6 +12,9 @@ import OrderStatusSelect from "./OrderStatusSelect";
 import DeleteOrderButton from "./DeleteOrderButton";
 import BulkAddItems from "./BulkAddItems";
 import OrderItemsManager from "./OrderItemsManager";
+import { computeItemStatus } from "@/lib/orderItemStatus";
+import { exportToXlsx } from "@/lib/exportXlsx";
+import { btnImport, btnExport } from "@/lib/buttonStyles";
 
 const invoiceStatusColors: Record<string, string> = {
   Draft: "bg-slate-100 text-slate-600 border-slate-300",
@@ -39,6 +42,24 @@ export default function OrderWorkspace({
 }) {
   const [pasteOpen, setPasteOpen] = useState(false);
 
+  function exportItemsXlsx() {
+    const header = ["Order-No.", "Product", "Qty", "List Price", "Discount %", "Dealer Price", "Total", "Status"];
+    const rows = items.map((i: any) => {
+      const status = computeItemStatus(Number(i.quantity) || 0, invoicedQtyByItem[i.id] ?? 0, order.status);
+      return [
+        i.sku ?? "",
+        i.product_name ?? "",
+        i.quantity ?? 0,
+        i.list_price ?? "",
+        i.dealer_discount_percent ?? 0,
+        i.unit_price ?? "",
+        i.total ?? "",
+        status.label,
+      ];
+    });
+    exportToXlsx(`${order.order_number}-items.xlsx`, header, rows, "Order Items");
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2 mb-6">
@@ -57,12 +78,13 @@ export default function OrderWorkspace({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setPasteOpen((v) => !v)}
-            className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50"
-          >
+          <button onClick={() => setPasteOpen((v) => !v)} className={btnImport}>
             <ClipboardPaste size={14} />
             Paste list of items
+          </button>
+          <button onClick={exportItemsXlsx} className={btnExport}>
+            <Download size={14} />
+            Export to Excel
           </button>
           <CreateInvoiceButton
             orderId={order.id}

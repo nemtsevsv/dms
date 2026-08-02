@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FileText } from "lucide-react";
+import { btnPrimary } from "@/lib/buttonStyles";
 
 type Item = {
   id: string;
@@ -82,7 +83,7 @@ export default function CreateInvoiceButton({
       onClick={createInvoice}
       disabled={disabled}
       title={remainingItems.length === 0 ? "All items are already fully invoiced" : undefined}
-      className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50"
+      className={btnPrimary}
     >
       <FileText size={14} />
       {creating ? "Creating..." : "Create Invoice"}
