@@ -176,8 +176,6 @@ export default async function ReportsPage() {
   const { data: stores } = await supabase.from("stores").select("id, name, country, currency").eq("status", "Active");
   const { data: storePlans } = await supabase.from("store_sales_plan").select("store_id, year, month, plan_amount_local");
   const { data: storeReceipts } = await supabase.from("store_receipts").select("store_id, occurred_at, store_receipt_items(total)");
-
-  const now = new Date();
   const thisY = now.getFullYear();
   const thisM = now.getMonth() + 1;
   const lastMonthDate = new Date(thisY, thisM - 2, 1);
