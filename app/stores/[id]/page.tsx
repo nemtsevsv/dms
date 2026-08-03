@@ -19,8 +19,11 @@ export const dynamic = "force-dynamic";
 export default async function StoreCardPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: store } = await supabase.from("stores").select("*").eq("id", params.id).single();
-  if (!store) notFound();
+  const { data: store, error: storeError } = await supabase.from("stores").select("*").eq("id", params.id).single();
+  if (storeError || !store) {
+    console.error("[stores/[id]] failed to load store", { id: params.id, error: storeError });
+    notFound();
+  }
 
   const [{ data: schedule }, { data: staff }, { data: products }, { data: overrides }, { data: plans }, { data: stock }, { data: deliveries }] =
     await Promise.all([
