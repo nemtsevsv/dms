@@ -19,8 +19,12 @@ function avg(nums: (number | null)[]): number | null {
 export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any; storeIds: string[] }) {
   const stores = bundle.stores.filter((s: any) => storeIds.includes(s.id));
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "");
-  const fxRate = stores.find((s: any) => s.id === storeId)?.fxRate ?? 1;
-  const currency = stores.find((s: any) => s.id === storeId)?.currency ?? "EUR";
+  const store = stores.find((s: any) => s.id === storeId);
+  const localCurrency = store?.currency ?? "EUR";
+  const fxRate = store?.fxRate ?? 1;
+  const [currency, setCurrency] = useState<"local" | "EUR">("EUR");
+  const rate = currency === "EUR" ? fxRate : 1;
+  const displayCurrency = currency === "EUR" ? "EUR" : localCurrency;
 
   const allMonthKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -32,7 +36,6 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const activeMonths = selectedMonths.length === 0 ? allMonthKeys : selectedMonths;
 
-  // Per-month aggregate, used both for the chart (all FY months) and table (selected months)
   const perMonth = useMemo(() => {
     const map = new Map<
       string,
@@ -83,7 +86,6 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
     return map;
   }, [bundle, storeId]);
 
-  // Chart always shows the 12 FY months for context
   const chartData = allMonthKeys.map((key) => {
     const [y, m] = key.split("-");
     const e = perMonth.get(key);
@@ -104,26 +106,65 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
   );
 
   function handleExport() {
-    const header = ["Metric", ...activeMonths.map((k) => k)];
+    const header = ["Metric", ...activeMonths];
     const rows: (string | number)[][] = [];
     const metricRow = (label: string, fn: (e: any) => string | number) => [label, ...activeMonths.map((k) => fn(perMonth.get(k) ?? {}))];
-    rows.push(metricRow("Average Weather (1-5)", (e) => (avg(e.weather) ?? "").toString()));
-    rows.push(metricRow("Average Season (1-5)", (e) => (avg(e.season) ?? "").toString()));
-    rows.push(metricRow("Average Expectations (1-5)", (e) => (avg(e.expectations) ?? "").toString()));
-    rows.push(metricRow("Visitors (Total)", (e) => e.visitors ?? 0));
-    rows.push(metricRow("New", (e) => e.newV ?? 0));
-    rows.push(metricRow("Existing", (e) => e.existingV ?? 0));
-    rows.push(metricRow("Calls (Total)", (e) => e.calls ?? 0));
-    rows.push(metricRow("Test Drives (Total)", (e) => e.testDrives ?? 0));
-    rows.push(metricRow("Receipts (Total)", (e) => e.receipts ?? 0));
-    rows.push(metricRow("Sales", (e) => e.actual ?? 0));
-    rows.push(metricRow("Core Items", (e) => e.core ?? 0));
-    rows.push(metricRow("Accessories", (e) => e.accessories ?? 0));
-    rows.push(metricRow("Average Receipt", (e) => (e.receipts > 0 ? Math.round(e.actual / e.receipts) : 0)));
+    rows.push(metricRow("Weather (1-5)", (e) => (avg(e.weather) ?? "").toString()));
+    rows.push(metricRow("Season (1-5)", (e) => (avg(e.season) ?? "").toString()));
+    rows.push(metricRow("Expectations (1-5)", (e) => (avg(e.expectations) ?? "").toString()));
+    rows.push(metricRow("Visitors", (e) => e.visitors ?? 0));
+    rows.push(metricRow("  New", (e) => e.newV ?? 0));
+    rows.push(metricRow("  Existing", (e) => e.existingV ?? 0));
+    rows.push(metricRow("Calls", (e) => e.calls ?? 0));
+    rows.push(metricRow("Test Drives", (e) => e.testDrives ?? 0));
+    rows.push(metricRow("Receipts", (e) => e.receipts ?? 0));
+    rows.push(metricRow(`Sales, ${displayCurrency}`, (e) => Math.round((e.actual ?? 0) / rate)));
+    rows.push(metricRow(`  Core Items, ${displayCurrency}`, (e) => Math.round((e.core ?? 0) / rate)));
+    rows.push(metricRow(`  Accessories, ${displayCurrency}`, (e) => Math.round((e.accessories ?? 0) / rate)));
     rows.push(metricRow("Conversion %", (e) => (e.visitors > 0 ? Math.round((e.receipts / e.visitors) * 100) : 0)));
+    rows.push(metricRow("Test-Drive KPI %", (e) => (e.testDrives ? Math.round((e.testDrives / (10 * 4.33)) * 100) : 0)));
+    rows.push(metricRow("Average Receipt", (e) => (e.receipts > 0 ? Math.round(e.actual / rate / e.receipts) : 0)));
     rows.push(metricRow("Target Achievement %", (e) => (e.target > 0 ? Math.round((e.actual / e.target) * 100) : 0)));
-    rows.push(metricRow("Average Self Evaluation (1-5)", (e) => (avg(e.selfEval) ?? "").toString()));
-    exportToXlsx(`retail-performance-${stores.find((s: any) => s.id === storeId)?.name ?? "store"}`, header, rows);
+    rows.push(metricRow("Self Evaluation (1-5)", (e) => (avg(e.selfEval) ?? "").toString()));
+    exportToXlsx(`retail-performance-${store?.name ?? "store"}`, header, rows);
+  }
+
+  const monthCols = activeMonths.map((k) => {
+    const [y, m] = k.split("-");
+    return { key: k, label: `${MONTH_NAMES[Number(m) - 1]} ${y}` };
+  });
+
+  function SectionHeader({ label }: { label: string }) {
+    return (
+      <tr className="bg-slate-100">
+        <td colSpan={monthCols.length + 1} className="px-3 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+          {label}
+        </td>
+      </tr>
+    );
+  }
+
+  function MetricRow({ label, indent, visual, fn }: { label: string; indent?: boolean; visual?: boolean; fn: (e: any) => any }) {
+    return (
+      <tr className="border-t border-slate-100">
+        <td className={`px-3 py-1.5 text-xs text-slate-600 ${indent ? "pl-8" : ""}`}>{label}</td>
+        {monthCols.map((c) => {
+          const e = perMonth.get(c.key) ?? {};
+          const val = fn(e);
+          return (
+            <td key={c.key} className="px-3 py-1.5 text-right text-xs">
+              {visual ? (
+                <div className="flex justify-end">
+                  <RatingIndicator value={val as number | null} />
+                </div>
+              ) : (
+                val ?? "—"
+              )}
+            </td>
+          );
+        })}
+      </tr>
+    );
   }
 
   return (
@@ -139,6 +180,10 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
           </select>
         )}
         <MultiSelectDropdown label="Months" options={allMonthKeys} selected={selectedMonths} onChange={setSelectedMonths} />
+        <select value={currency} onChange={(e) => setCurrency(e.target.value as "local" | "EUR")} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          <option value="local">{localCurrency}</option>
+          <option value="EUR">EUR</option>
+        </select>
         <button onClick={handleExport} className="ml-auto flex items-center gap-2 px-3 py-2 border border-emerald-300 text-emerald-700 rounded-lg text-sm hover:bg-emerald-50">
           <Download size={14} />
           Export to Excel
@@ -157,58 +202,42 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+        <table className="w-full">
+          <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase">
             <tr>
-              <th className="text-left px-4 py-3">Metric</th>
-              {activeMonths.map((k) => {
-                const [y, m] = k.split("-");
-                return (
-                  <th key={k} className="text-right px-4 py-3 whitespace-nowrap">
-                    {MONTH_NAMES[Number(m) - 1]} {y}
-                  </th>
-                );
-              })}
+              <th className="text-left px-3 py-2">Metric</th>
+              {monthCols.map((c) => (
+                <th key={c.key} className="text-right px-3 py-2 whitespace-nowrap">
+                  {c.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {[
-              { label: "Average Weather", visual: true, fn: (e: any) => avg(e.weather) },
-              { label: "Average Season", visual: true, fn: (e: any) => avg(e.season) },
-              { label: "Average Expectations", visual: true, fn: (e: any) => avg(e.expectations) },
-              { label: "Visitors (Total)", fn: (e: any) => e.visitors },
-              { label: "New", fn: (e: any) => e.newV },
-              { label: "Existing", fn: (e: any) => e.existingV },
-              { label: "Calls (Total)", fn: (e: any) => e.calls },
-              { label: "Test Drives (Total)", fn: (e: any) => e.testDrives },
-              { label: "Receipts (Total)", fn: (e: any) => e.receipts },
-              { label: "Sales", fn: (e: any) => `${Math.round(e.actual).toLocaleString("de-DE")} ${currency}` },
-              { label: "Core Items", fn: (e: any) => `${Math.round(e.core).toLocaleString("de-DE")} ${currency}` },
-              { label: "Accessories", fn: (e: any) => `${Math.round(e.accessories).toLocaleString("de-DE")} ${currency}` },
-              { label: "Average Receipt", fn: (e: any) => (e.receipts > 0 ? Math.round(e.actual / e.receipts).toLocaleString("de-DE") : "—") },
-              { label: "Conversion", fn: (e: any) => (e.visitors > 0 ? `${Math.round((e.receipts / e.visitors) * 100)}%` : "—") },
-              { label: "Target Achievement", fn: (e: any) => (e.target > 0 ? `${Math.round((e.actual / e.target) * 100)}%` : "—") },
-              { label: "Average Self Evaluation", visual: true, fn: (e: any) => avg(e.selfEval) },
-            ].map((row) => (
-              <tr key={row.label} className="border-t border-slate-100">
-                <td className="px-4 py-3 text-slate-600">{row.label}</td>
-                {activeMonths.map((k) => {
-                  const e = perMonth.get(k) ?? {};
-                  const val = row.fn(e);
-                  return (
-                    <td key={k} className="px-4 py-3 text-right">
-                      {row.visual ? (
-                        <div className="flex justify-end">
-                          <RatingIndicator value={val as number | null} />
-                        </div>
-                      ) : (
-                        val ?? "—"
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            <SectionHeader label="Environment" />
+            <MetricRow label="Weather" visual fn={(e) => avg(e.weather)} />
+            <MetricRow label="Season" visual fn={(e) => avg(e.season)} />
+            <MetricRow label="Expectations" visual fn={(e) => avg(e.expectations)} />
+
+            <SectionHeader label="Traffic & Activities" />
+            <MetricRow label="Visitors" fn={(e) => e.visitors} />
+            <MetricRow label="New" indent fn={(e) => e.newV} />
+            <MetricRow label="Existing" indent fn={(e) => e.existingV} />
+            <MetricRow label="Calls" fn={(e) => e.calls} />
+            <MetricRow label="Test Drives" fn={(e) => e.testDrives} />
+
+            <SectionHeader label="Sales" />
+            <MetricRow label="Receipts" fn={(e) => e.receipts} />
+            <MetricRow label={`Sales, ${displayCurrency}`} fn={(e) => Math.round((e.actual ?? 0) / rate).toLocaleString("de-DE")} />
+            <MetricRow label={`Core Items, ${displayCurrency}`} indent fn={(e) => Math.round((e.core ?? 0) / rate).toLocaleString("de-DE")} />
+            <MetricRow label={`Accessories, ${displayCurrency}`} indent fn={(e) => Math.round((e.accessories ?? 0) / rate).toLocaleString("de-DE")} />
+
+            <SectionHeader label="Performance" />
+            <MetricRow label="Conversion" fn={(e) => (e.visitors > 0 ? `${Math.round((e.receipts / e.visitors) * 100)}%` : "—")} />
+            <MetricRow label="Test-Drive KPI" fn={(e) => (e.testDrives ? `${Math.round((e.testDrives / (10 * 4.33)) * 100)}%` : "—")} />
+            <MetricRow label="Average Receipt" fn={(e) => (e.receipts > 0 ? Math.round(e.actual / rate / e.receipts).toLocaleString("de-DE") : "—")} />
+            <MetricRow label="Target Achievement" fn={(e) => (e.target > 0 ? `${Math.round((e.actual / e.target) * 100)}%` : "—")} />
+            <MetricRow label="Self Evaluation" visual fn={(e) => avg(e.selfEval)} />
           </tbody>
         </table>
       </div>

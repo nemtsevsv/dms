@@ -4,17 +4,22 @@ import { formatThousandsRoundUp } from "@/lib/formatK";
 
 type DayData = { label: string; actual: number; traffic: number };
 
+const BAND_TOP = 20;
+const BAND_BOTTOM = 70;
+
 export default function WeeklySalesChart({ data }: { data: DayData[] }) {
   const maxBar = Math.max(...data.map((d) => d.actual), 1);
-  const maxTraffic = Math.max(...data.map((d) => d.traffic), 1);
+  const trafficValues = data.map((d) => d.traffic);
+  const minTraffic = Math.min(...trafficValues);
+  const maxTraffic = Math.max(...trafficValues, 1);
 
-  const points = data
-    .map((d, i) => {
-      const x = ((i + 0.5) / data.length) * 100;
-      const y = 100 - (d.traffic / maxTraffic) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
+  function trafficY(traffic: number) {
+    if (maxTraffic === minTraffic) return (BAND_TOP + BAND_BOTTOM) / 2;
+    const pct = (traffic - minTraffic) / (maxTraffic - minTraffic);
+    return BAND_BOTTOM - pct * (BAND_BOTTOM - BAND_TOP);
+  }
+
+  const points = data.map((d, i) => `${((i + 0.5) / data.length) * 100},${trafficY(d.traffic)}`).join(" ");
 
   return (
     <div>
@@ -31,8 +36,7 @@ export default function WeeklySalesChart({ data }: { data: DayData[] }) {
           <polyline points={points} fill="none" stroke="#3b82f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           {data.map((d, i) => {
             const x = ((i + 0.5) / data.length) * 100;
-            const y = 100 - (d.traffic / maxTraffic) * 100;
-            return <circle key={i} cx={x} cy={y} r="1.2" fill="#3b82f6" />;
+            return <circle key={i} cx={x} cy={trafficY(d.traffic)} r="1.2" fill="#3b82f6" />;
           })}
         </svg>
         <div className="flex items-end gap-2 h-full relative">

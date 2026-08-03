@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Minus } from "lucide-react";
@@ -16,6 +16,7 @@ const ROWS: { type: EventType; label: string }[] = [
 // Same grid template as VisitorTrafficSlots so New / Existing line up
 // vertically between the two cards.
 const GRID = "grid grid-cols-[52px_1fr_1fr] items-center gap-2";
+const REFRESH_DEBOUNCE_MS = 900;
 
 export default function CustomerActivities({
   storeId,
@@ -30,16 +31,29 @@ export default function CustomerActivities({
 }) {
   const router = useRouter();
   const supabase = createClient();
-  const [pending, setPending] = useState<string | null>(null);
+  const [localDelta, setLocalDelta] = useState<Record<string, number>>({});
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function refresh() {
-    router.refresh();
-    onChange?.();
+  useEffect(() => {
+    setLocalDelta({});
+  }, [counts]);
+
+  function count(key: string) {
+    return (counts[key] ?? 0) + (localDelta[key] ?? 0);
+  }
+
+  function scheduleRefresh() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      router.refresh();
+      onChange?.();
+    }, REFRESH_DEBOUNCE_MS);
   }
 
   async function tap(type: EventType, customerType: CustomerType) {
     const key = `${type}-${customerType}`;
-    setPending(key);
+    setLocalDelta((d) => ({ ...d, [key]: (d[key] ?? 0) + 1 }));
+    scheduleRefresh();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -50,14 +64,13 @@ export default function CustomerActivities({
       occurred_at: `${reportDate}T12:00:00Z`,
       created_by: user?.email ?? null,
     });
-    setPending(null);
-    refresh();
   }
 
   async function undo(type: EventType, customerType: CustomerType) {
     const key = `${type}-${customerType}`;
-    if ((counts[key] ?? 0) <= 0) return;
-    setPending(`undo-${key}`);
+    if (count(key) <= 0) return;
+    setLocalDelta((d) => ({ ...d, [key]: (d[key] ?? 0) - 1 }));
+    scheduleRefresh();
     const { data: recent } = await supabase
       .from("store_traffic_events")
       .select("id")
@@ -71,30 +84,26 @@ export default function CustomerActivities({
     if (recent && recent.length > 0) {
       await supabase.from("store_traffic_events").delete().eq("id", recent[0].id);
     }
-    setPending(null);
-    refresh();
   }
 
   function Stepper({ type, ct }: { type: EventType; ct: CustomerType }) {
     const key = `${type}-${ct}`;
-    const count = counts[key] ?? 0;
     return (
       <div className="flex items-center justify-center gap-2">
         <button
           onClick={() => undo(type, ct)}
-          disabled={pending === `undo-${key}` || count === 0}
+          disabled={count(key) === 0}
           aria-label={`-1 ${ct} ${type}`}
           className="w-10 h-10 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 active:bg-red-100 disabled:opacity-30"
         >
           <Minus size={16} className="md:hidden" />
           <Minus size={12} className="hidden md:block" />
         </button>
-        <span className="w-5 text-center text-base md:text-sm font-semibold tabular-nums">{count}</span>
+        <span className="w-5 text-center text-base md:text-sm font-semibold tabular-nums">{count(key)}</span>
         <button
           onClick={() => tap(type, ct)}
-          disabled={pending === key}
           aria-label={`+1 ${ct} ${type}`}
-          className="w-10 h-10 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 active:bg-emerald-100 disabled:opacity-50"
+          className="w-10 h-10 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 active:bg-emerald-100"
         >
           <Plus size={16} className="md:hidden" />
           <Plus size={12} className="hidden md:block" />

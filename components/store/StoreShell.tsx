@@ -4,7 +4,7 @@ import StoreTopNav from "./StoreTopNav";
 import StoreBottomNav from "./StoreBottomNav";
 import { format } from "date-fns";
 
-export default async function StoreShell({ storeId, children }: { storeId: string; children: React.ReactNode }) {
+export default async function StoreShell({ storeId, wide, children }: { storeId: string; wide?: boolean; children: React.ReactNode }) {
   const supabase = createClient();
   const { data: store } = await supabase.from("stores").select("name, currency").eq("id", storeId).single();
 
@@ -18,7 +18,7 @@ export default async function StoreShell({ storeId, children }: { storeId: strin
         <StoreLogoutButton />
       </header>
       <StoreTopNav />
-      <main className="p-4 max-w-lg md:max-w-3xl mx-auto pb-20 md:pb-8">{children}</main>
+      <main className={`p-4 mx-auto pb-20 md:pb-8 ${wide ? "max-w-lg md:max-w-6xl" : "max-w-lg md:max-w-3xl"}`}>{children}</main>
       <StoreBottomNav />
     </div>
   );

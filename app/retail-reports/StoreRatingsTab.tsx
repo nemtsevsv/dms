@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -8,27 +9,32 @@ const MEDAL_ROW = ["bg-amber-50 border-amber-300", "bg-slate-50 border-slate-300
 
 export default function StoreRatingsTab({ bundle }: { bundle: any }) {
   const [storeFilter, setStoreFilter] = useState("all");
-  const [monthKey, setMonthKey] = useState("all");
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [currency, setCurrency] = useState<"EUR" | "local">("EUR");
+
+  const storeMap = new Map(bundle.stores.map((s: any) => [s.id, s]));
+  const singleStore = storeFilter !== "all" ? (storeMap.get(storeFilter) as any) : null;
+  const displayCurrency = currency === "local" && singleStore ? singleStore.currency : "EUR";
+  const displayRate = currency === "local" && singleStore ? singleStore.fxRate : 1; // multiply EUR by this to show local
 
   const allMonthKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const r of bundle.dailyReports) keys.add(r.date.slice(0, 7));
     return Array.from(keys).sort();
   }, [bundle]);
-
-  const storeMap = new Map(bundle.stores.map((s: any) => [s.id, s]));
+  const activeMonths = selectedMonths.length === 0 ? allMonthKeys : selectedMonths;
 
   const filteredReceipts = useMemo(
-    () => bundle.receipts.filter((r: any) => (storeFilter === "all" || r.storeId === storeFilter) && (monthKey === "all" || r.date.slice(0, 7) === monthKey)),
-    [bundle, storeFilter, monthKey]
+    () => bundle.receipts.filter((r: any) => (storeFilter === "all" || r.storeId === storeFilter) && activeMonths.includes(r.date.slice(0, 7))),
+    [bundle, storeFilter, activeMonths]
   );
   const filteredTraffic = useMemo(
-    () => bundle.traffic.filter((t: any) => (storeFilter === "all" || t.storeId === storeFilter) && (monthKey === "all" || t.date.slice(0, 7) === monthKey)),
-    [bundle, storeFilter, monthKey]
+    () => bundle.traffic.filter((t: any) => (storeFilter === "all" || t.storeId === storeFilter) && activeMonths.includes(t.date.slice(0, 7))),
+    [bundle, storeFilter, activeMonths]
   );
   const filteredReports = useMemo(
-    () => bundle.dailyReports.filter((r: any) => (storeFilter === "all" || r.storeId === storeFilter) && (monthKey === "all" || r.date.slice(0, 7) === monthKey)),
-    [bundle, storeFilter, monthKey]
+    () => bundle.dailyReports.filter((r: any) => (storeFilter === "all" || r.storeId === storeFilter) && activeMonths.includes(r.date.slice(0, 7))),
+    [bundle, storeFilter, activeMonths]
   );
 
   // ---- Top Stores (EUR-normalized so different currencies compare fairly) ----
@@ -112,16 +118,16 @@ export default function StoreRatingsTab({ bundle }: { bundle: any }) {
             </option>
           ))}
         </select>
-        <select value={monthKey} onChange={(e) => setMonthKey(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-          <option value="all">Whole Year</option>
-          {allMonthKeys.map((m) => {
-            const [y, mo] = m.split("-");
-            return (
-              <option key={m} value={m}>
-                {MONTH_NAMES[Number(mo) - 1]} {y}
-              </option>
-            );
-          })}
+        <MultiSelectDropdown label="Months" options={allMonthKeys} selected={selectedMonths} onChange={setSelectedMonths} />
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value as "EUR" | "local")}
+          disabled={!singleStore}
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm disabled:opacity-50"
+          title={!singleStore ? "Pick a single store to view its local currency" : undefined}
+        >
+          <option value="EUR">EUR</option>
+          {singleStore && <option value="local">{singleStore.currency}</option>}
         </select>
       </div>
 
@@ -132,7 +138,7 @@ export default function StoreRatingsTab({ bundle }: { bundle: any }) {
             <tr>
               <th className="text-left px-4 py-3">#</th>
               <th className="text-left px-4 py-3">Store Name</th>
-              <th className="text-right px-4 py-3">Total Sales (EUR)</th>
+              <th className="text-right px-4 py-3">Total Sales ({displayCurrency})</th>
               <th className="text-right px-4 py-3">Core Items</th>
               <th className="text-right px-4 py-3">Accessories</th>
               <th className="text-right px-4 py-3">Traffic</th>
@@ -147,14 +153,14 @@ export default function StoreRatingsTab({ bundle }: { bundle: any }) {
               <tr key={s.storeId} className={`border-t text-sm ${idx < 3 ? `border-2 ${MEDAL_ROW[idx]} font-medium` : "border-slate-100"}`}>
                 <td className="px-4 py-3">{idx < 3 ? <span className="text-lg">{MEDALS[idx]}</span> : idx + 1}</td>
                 <td className="px-4 py-3">{s.name}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.sales).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.core).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.accessories).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.sales * displayRate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.core * displayRate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.accessories * displayRate).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-right">{s.traffic}</td>
                 <td className="px-4 py-3 text-right">{s.receipts}</td>
                 <td className="px-4 py-3 text-right">{Math.round(s.conversionPct)}%</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.avgReceipt).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.stockValueEur).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.avgReceipt * displayRate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.stockValueEur * displayRate).toLocaleString("de-DE")}</td>
               </tr>
             ))}
             {storeStats.length === 0 && (
@@ -175,7 +181,7 @@ export default function StoreRatingsTab({ bundle }: { bundle: any }) {
             <tr>
               <th className="text-left px-4 py-3">#</th>
               <th className="text-left px-4 py-3">Display Name</th>
-              <th className="text-right px-4 py-3">Total Sales (EUR)</th>
+              <th className="text-right px-4 py-3">Total Sales ({displayCurrency})</th>
               <th className="text-right px-4 py-3">Core Items</th>
               <th className="text-right px-4 py-3">Accessories</th>
               <th className="text-right px-4 py-3">Shifts</th>
@@ -189,9 +195,9 @@ export default function StoreRatingsTab({ bundle }: { bundle: any }) {
               <tr key={s.email} className={`border-t text-sm ${idx < 3 ? `border-2 ${MEDAL_ROW[idx]} font-medium` : "border-slate-100"}`}>
                 <td className="px-4 py-3">{idx < 3 ? <span className="text-lg">{MEDALS[idx]}</span> : idx + 1}</td>
                 <td className="px-4 py-3">{s.displayName}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.sales).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.core).toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{Math.round(s.accessories).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.sales * displayRate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.core * displayRate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(s.accessories * displayRate).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-right">{s.shifts}</td>
                 <td className="px-4 py-3 text-right">{s.traffic}</td>
                 <td className="px-4 py-3 text-right">{s.receipts}</td>

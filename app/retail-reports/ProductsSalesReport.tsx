@@ -3,13 +3,20 @@
 import { useMemo, useState } from "react";
 import { exportToXlsx } from "@/lib/exportXlsx";
 import { Download } from "lucide-react";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any; storeIds: string[] }) {
   const stores = bundle.stores.filter((s: any) => storeIds.includes(s.id));
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "");
-  const [monthKey, setMonthKey] = useState("all"); // "all" or "YYYY-M"
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const store = stores.find((s: any) => s.id === storeId);
+  const localCurrency = store?.currency ?? "EUR";
+  const fxRate = store?.fxRate ?? 1;
+  const [currency, setCurrency] = useState<"local" | "EUR">("local");
+  const rate = currency === "EUR" ? fxRate : 1;
+  const displayCurrency = currency === "EUR" ? "EUR" : localCurrency;
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>();
@@ -18,12 +25,11 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
     return Array.from(keys).sort();
   }, [bundle, storeId]);
 
-  const store = stores.find((s: any) => s.id === storeId);
-  const currency = store?.currency ?? "EUR";
+  const activeMonths = selectedMonths.length === 0 ? monthOptions : selectedMonths;
 
   const filteredReceipts = useMemo(
-    () => bundle.receipts.filter((r: any) => r.storeId === storeId && (monthKey === "all" || r.date.slice(0, 7) === monthKey)),
-    [bundle, storeId, monthKey]
+    () => bundle.receipts.filter((r: any) => r.storeId === storeId && activeMonths.includes(r.date.slice(0, 7))),
+    [bundle, storeId, activeMonths]
   );
 
   const byDate = useMemo(() => {
@@ -41,22 +47,21 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filteredReceipts]);
 
-  const totalSales = byDate.reduce((s, [, v]) => s + v.total, 0);
+  const totalSales = byDate.reduce((s, [, v]) => s + v.total, 0) / rate;
   const totalPlan = useMemo(() => {
-    const relevantMonths = monthKey === "all" ? monthOptions : [monthKey];
     return bundle.plans
-      .filter((p: any) => p.storeId === storeId && relevantMonths.includes(`${p.year}-${String(p.month).padStart(2, "0")}`))
-      .reduce((s: number, p: any) => s + p.planLocal, 0);
-  }, [bundle, storeId, monthKey, monthOptions]);
+      .filter((p: any) => p.storeId === storeId && activeMonths.includes(`${p.year}-${String(p.month).padStart(2, "0")}`))
+      .reduce((s: number, p: any) => s + p.planLocal, 0) / rate;
+  }, [bundle, storeId, activeMonths, rate]);
   const achievementPct = totalPlan > 0 ? Math.round((totalSales / totalPlan) * 100) : 0;
 
   function handleExport() {
-    const header = ["Date", "Total Sales", "Core Items", "Accessories", "Items (Order-No. / Product)"];
+    const header = ["Date", `Total Sales (${displayCurrency})`, `Core Items (${displayCurrency})`, `Accessories (${displayCurrency})`, "Items (Order-No. / Product)"];
     const rows = byDate.map(([date, v]) => [
       date,
-      v.total,
-      v.core,
-      v.accessories,
+      Math.round(v.total / rate),
+      Math.round(v.core / rate),
+      Math.round(v.accessories / rate),
       v.items.map((i) => `${i.sku} ${i.product}`).join("; "),
     ]);
     exportToXlsx(`products-sales-report-${store?.name ?? "store"}`, header, rows);
@@ -74,16 +79,10 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
             ))}
           </select>
         )}
-        <select value={monthKey} onChange={(e) => setMonthKey(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-          <option value="all">Whole Year</option>
-          {monthOptions.map((m) => {
-            const [y, mo] = m.split("-");
-            return (
-              <option key={m} value={m}>
-                {MONTH_NAMES[Number(mo) - 1]} {y}
-              </option>
-            );
-          })}
+        <MultiSelectDropdown label="Months" options={monthOptions} selected={selectedMonths} onChange={setSelectedMonths} />
+        <select value={currency} onChange={(e) => setCurrency(e.target.value as "local" | "EUR")} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
+          <option value="local">{localCurrency}</option>
+          <option value="EUR">EUR</option>
         </select>
         <button onClick={handleExport} className="ml-auto flex items-center gap-2 px-3 py-2 border border-emerald-300 text-emerald-700 rounded-lg text-sm hover:bg-emerald-50">
           <Download size={14} />
@@ -95,13 +94,13 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="text-xs font-medium text-slate-500 mb-1">Total Sales</div>
           <div className="text-2xl font-semibold">
-            {totalSales.toLocaleString("de-DE")} {currency}
+            {Math.round(totalSales).toLocaleString("de-DE")} {displayCurrency}
           </div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="text-xs font-medium text-slate-500 mb-1">Plan</div>
           <div className="text-2xl font-semibold">
-            {totalPlan.toLocaleString("de-DE")} {currency}
+            {Math.round(totalPlan).toLocaleString("de-DE")} {displayCurrency}
           </div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -125,9 +124,9 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
             {byDate.map(([date, v]) => (
               <tr key={date} className="border-t border-slate-100">
                 <td className="px-4 py-3 text-slate-500">{date}</td>
-                <td className="px-4 py-3 text-right font-medium">{v.total.toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{v.core.toLocaleString("de-DE")}</td>
-                <td className="px-4 py-3 text-right">{v.accessories.toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right font-medium">{Math.round(v.total / rate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(v.core / rate).toLocaleString("de-DE")}</td>
+                <td className="px-4 py-3 text-right">{Math.round(v.accessories / rate).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-xs text-slate-500 max-w-xs">
                   {v.items.map((i, idx) => (
                     <span key={idx}>

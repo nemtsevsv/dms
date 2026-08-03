@@ -94,7 +94,11 @@ export default async function RetailReportsPage() {
   const content = <RetailReportsClient bundle={bundle} isStoreStaff={access.isStoreStaff} />;
 
   if (access.isStoreStaff && access.storeId) {
-    return <StoreShell storeId={access.storeId}>{content}</StoreShell>;
+    return (
+      <StoreShell storeId={access.storeId} wide>
+        {content}
+      </StoreShell>
+    );
   }
   return (
     <AppShell>

@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 type Row = {
   date: string;
   staffCount: number | null;
@@ -10,26 +12,26 @@ type Row = {
 export default function StoreDailyReportsHistory({ rows, currency }: { rows: Row[]; currency: string }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+      <table className="w-full text-[11px] sm:text-sm md:text-base">
+        <thead className="bg-slate-50 text-slate-500 text-[10px] sm:text-xs uppercase">
           <tr>
-            <th className="text-left px-4 py-3">Date</th>
-            <th className="text-right px-4 py-3">Staff</th>
-            <th className="text-right px-4 py-3">Visitors</th>
-            <th className="text-right px-4 py-3">Sales ({currency})</th>
-            <th className="text-right px-4 py-3">Target</th>
-            <th className="text-right px-4 py-3">Self-eval</th>
+            <th className="text-left px-2 sm:px-4 py-2 sm:py-3">Date</th>
+            <th className="text-right px-2 sm:px-4 py-2 sm:py-3">Staff</th>
+            <th className="text-right px-2 sm:px-4 py-2 sm:py-3">Visitors</th>
+            <th className="text-right px-2 sm:px-4 py-2 sm:py-3">Sales ({currency})</th>
+            <th className="text-right px-2 sm:px-4 py-2 sm:py-3">Target</th>
+            <th className="text-right px-2 sm:px-4 py-2 sm:py-3">Self-eval</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.date} className="border-t border-slate-100">
-              <td className="px-4 py-3">{r.date}</td>
-              <td className="px-4 py-3 text-right text-slate-500">{r.staffCount ?? "—"}</td>
-              <td className="px-4 py-3 text-right text-slate-500">{r.visitors}</td>
-              <td className="px-4 py-3 text-right">{r.salesTotal.toLocaleString("de-DE")}</td>
-              <td className="px-4 py-3 text-right font-medium">{r.achievementPct}%</td>
-              <td className="px-4 py-3 text-right text-slate-500">{r.selfEvaluation ?? "—"}</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 whitespace-nowrap">{format(new Date(r.date), "dd.MM.yyyy")}</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-slate-500">{r.staffCount ?? "—"}</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-slate-500">{r.visitors}</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 text-right">{r.salesTotal.toLocaleString("de-DE")}</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 text-right font-medium">{r.achievementPct}%</td>
+              <td className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-slate-500">{r.selfEvaluation ?? "—"}</td>
             </tr>
           ))}
           {rows.length === 0 && (
