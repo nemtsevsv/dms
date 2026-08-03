@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Trash2 } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
 
 type StaffRow = { id: string; email: string; display_name: string | null; role: string };
 
@@ -15,10 +15,32 @@ export default function StoreStaffManager({ storeId, staff }: { storeId: string;
   const [role, setRole] = useState("seller");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserEmail(data.user?.email ?? null));
+  }, []);
+
+  const isSelf = !!currentUserEmail && email.trim().toLowerCase() === currentUserEmail.toLowerCase();
 
   async function addStaff(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
+
+    // Re-check who is actually logged in right now, at the moment of submit —
+    // don't rely on state set by an earlier useEffect, which could still be
+    // loading if the form is submitted quickly.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const isSelfNow = !!user?.email && email.trim().toLowerCase() === user.email.toLowerCase();
+
+    if (isSelfNow) {
+      const confirmed = window.confirm(
+        "This is the email you're logged in with right now. Adding it here will restrict THIS login to the store-only screen going forward, and you'll lose access to the admin panel (Dealers, Orders, Products, etc.) until it's removed again. Use a separate email for a real store employee instead.\n\nAdd it anyway?"
+      );
+      if (!confirmed) return;
+    }
     setSaving(true);
     setError(null);
     const { error } = await supabase.from("store_users").insert({
@@ -74,6 +96,12 @@ export default function StoreStaffManager({ storeId, staff }: { storeId: string;
           Add
         </button>
       </form>
+      {isSelf && (
+        <p className="flex items-center gap-2 text-sm text-amber-600 mb-3">
+          <AlertTriangle size={14} />
+          This is your own login — adding it will lock this account out of the admin panel.
+        </p>
+      )}
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">

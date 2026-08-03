@@ -46,7 +46,10 @@ export async function middleware(request: NextRequest) {
     // Store staff can only ever see the /store area — never the admin panel,
     // even by typing a URL directly. Admin data is also protected by RLS,
     // this just keeps the navigation experience clean.
-    if (isStoreStaff && !path.startsWith("/store")) {
+    // NOTE: must be an exact "/store" or "/store/..." match — "/stores/..."
+    // (the admin section) is a different route and must NOT match here.
+    const isStoreArea = path === "/store" || path.startsWith("/store/");
+    if (isStoreStaff && !isStoreArea) {
       return NextResponse.redirect(new URL("/store", request.url));
     }
   }
