@@ -3,13 +3,14 @@ import { getStoreAccess } from "@/lib/storeAccess";
 import { redirect } from "next/navigation";
 import DealerTabs from "@/components/DealerTabs";
 import MorningBrief from "@/components/store/MorningBrief";
-import TrafficCounters from "@/components/store/TrafficCounters";
+import VisitorTrafficSlots from "@/components/store/VisitorTrafficSlots";
+import CustomerActivities from "@/components/store/CustomerActivities";
 import SalesEntry from "@/components/store/SalesEntry";
 import EndOfDay from "@/components/store/EndOfDay";
 import StoreWeeklyFocusEditor from "@/components/StoreWeeklyFocusEditor";
 import StoreInventoryTable from "@/components/StoreInventoryTable";
 import StoreDailyReportsHistory from "@/components/StoreDailyReportsHistory";
-import { hoursForDate, openDaysInMonth } from "@/lib/storeSchedule";
+import { hoursForDate, openDaysInMonth, getHourSlotsForDate } from "@/lib/storeSchedule";
 import { getWeekStart, getWeekEnd, toDateStr } from "@/lib/isoWeek";
 
 export const dynamic = "force-dynamic";
@@ -42,19 +43,21 @@ export default async function StoreHomePage() {
     { data: overrides },
     { data: stock },
     { data: reportsHistory },
+    { data: myStaffRow },
   ] = await Promise.all([
     supabase.from("stores").select("*").eq("id", storeId).single(),
     supabase.from("store_schedule").select("*").eq("store_id", storeId),
     supabase.from("store_sales_plan").select("year, month, plan_amount_local").eq("store_id", storeId),
     supabase.from("daily_reports").select("*").eq("store_id", storeId).eq("report_date", todayStr).maybeSingle(),
-    supabase.from("store_traffic_events").select("event_type, customer_type").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
+    supabase.from("store_traffic_events").select("event_type, customer_type, occurred_at").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
     supabase.from("store_traffic_events").select("event_type").eq("store_id", storeId).gte("occurred_at", toDateStr(weekStart) + "T00:00:00").lte("occurred_at", toDateStr(weekEnd) + "T23:59:59"),
-    supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
+    supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total, item_type)").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
     supabase.from("store_weekly_focus").select("*").eq("store_id", storeId).eq("week_start_date", toDateStr(weekStart)).maybeSingle(),
     supabase.from("products").select("sku, product_name, retail_price_incl_vat"),
     supabase.from("store_price_overrides").select("sku, local_price").eq("store_id", storeId),
     supabase.from("store_inventory_current").select("*").eq("store_id", storeId),
     supabase.from("daily_reports").select("*").eq("store_id", storeId).order("report_date", { ascending: false }).limit(31),
+    supabase.from("store_users").select("display_name, email").eq("store_id", storeId).eq("email", access.email).maybeSingle(),
   ]);
 
   const fxRate = store?.fx_rate_to_eur ?? 1;
@@ -71,14 +74,24 @@ export default async function StoreHomePage() {
   const openDays = openDaysInMonth(schedule ?? [], today.getFullYear(), today.getMonth() + 1);
   const dailyTarget = openDays > 0 ? thisMonthPlan / openDays : 0;
   const workingHours = hoursForDate(schedule ?? [], today);
+  const slots = getHourSlotsForDate(schedule ?? [], today);
 
-  // Today's traffic counts
-  const counts: Record<string, number> = {};
+  // Today's traffic: visitor slot counts + calls/test-drive activity counts
+  const slotCounts: Record<string, number> = {};
+  const activityCounts: Record<string, number> = {};
+  let visitorsToday = 0;
+  let newVisitorsToday = 0;
   for (const t of trafficToday ?? []) {
-    const key = `${t.event_type}-${t.customer_type}`;
-    counts[key] = (counts[key] ?? 0) + 1;
+    if (t.event_type === "visitor") {
+      visitorsToday++;
+      if (t.customer_type === "new") newVisitorsToday++;
+      const hour = new Date(t.occurred_at).getUTCHours();
+      slotCounts[`${hour}-${t.customer_type}`] = (slotCounts[`${hour}-${t.customer_type}`] ?? 0) + 1;
+    } else {
+      const key = `${t.event_type}-${t.customer_type}`;
+      activityCounts[key] = (activityCounts[key] ?? 0) + 1;
+    }
   }
-  const visitorsToday = (trafficToday ?? []).filter((t) => t.event_type === "visitor").length;
 
   // This week's calls / test-drives vs KPI targets
   const callsThisWeek = (trafficThisWeek ?? []).filter((t) => t.event_type === "call").length;
@@ -87,6 +100,14 @@ export default async function StoreHomePage() {
   // Today's sales
   const todaySalesTotal = (receiptsToday ?? []).reduce(
     (s, r: any) => s + (r.store_receipt_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0),
+    0
+  );
+  const todayCoreTotal = (receiptsToday ?? []).reduce(
+    (s, r: any) => s + (r.store_receipt_items ?? []).filter((it: any) => it.item_type === "core").reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0),
+    0
+  );
+  const todayAccessoriesTotal = (receiptsToday ?? []).reduce(
+    (s, r: any) => s + (r.store_receipt_items ?? []).filter((it: any) => it.item_type === "accessory").reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0),
     0
   );
   const dailyAchievementPct = dailyTarget > 0 ? (todaySalesTotal / dailyTarget) * 100 : 0;
@@ -135,9 +156,13 @@ export default async function StoreHomePage() {
     };
   });
 
+  const employeeName = myStaffRow?.display_name || access.email;
+
   return (
     <div className="space-y-4">
-      <StoreWeeklyFocusEditor storeId={storeId} weekStart={weekStart} focus={focus} editable={access.storeRole === "store_manager"} />
+      {access.storeRole === "store_manager" && (
+        <StoreWeeklyFocusEditor storeId={storeId} weekStart={weekStart} weekEnd={weekEnd} focus={focus} editable />
+      )}
 
       <DealerTabs
         tabs={[
@@ -149,18 +174,26 @@ export default async function StoreHomePage() {
                 <MorningBrief
                   storeId={storeId}
                   reportDate={todayStr}
+                  employeeName={employeeName}
                   existing={reportToday}
                   dailyTarget={round2(dailyTarget)}
+                  dailyTargetEur={round2(fxRate > 0 ? dailyTarget / fxRate : 0)}
                   currency={store?.currency ?? "EUR"}
                   workingHours={workingHours}
+                  focus={focus}
                 />
-                <TrafficCounters storeId={storeId} counts={counts} />
+                <VisitorTrafficSlots storeId={storeId} reportDate={todayStr} slots={slots} slotCounts={slotCounts} />
+                <CustomerActivities storeId={storeId} reportDate={todayStr} counts={activityCounts} />
                 <SalesEntry
                   storeId={storeId}
+                  reportDate={todayStr}
                   products={priceList}
                   currency={store?.currency ?? "EUR"}
                   todayReceiptsCount={(receiptsToday ?? []).length}
                   todaySalesTotal={todaySalesTotal}
+                  todayCoreTotal={todayCoreTotal}
+                  todayAccessoriesTotal={todayAccessoriesTotal}
+                  dailyTarget={round2(dailyTarget)}
                 />
                 <EndOfDay
                   storeId={storeId}
@@ -169,7 +202,9 @@ export default async function StoreHomePage() {
                   dailyAchievementPct={dailyAchievementPct}
                   monthAchievementPct={monthAchievementPct}
                   visitors={visitorsToday}
+                  newVisitors={newVisitorsToday}
                   receipts={(receiptsToday ?? []).length}
+                  salesTotal={todaySalesTotal}
                   callsThisWeekPct={(callsThisWeek / 35) * 100}
                   testDrivesThisWeekPct={(testDrivesThisWeek / 10) * 100}
                 />

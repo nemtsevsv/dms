@@ -19,17 +19,23 @@ type Report = {
 export default function MorningBrief({
   storeId,
   reportDate,
+  employeeName,
   existing,
   dailyTarget,
+  dailyTargetEur,
   currency,
   workingHours,
+  focus,
 }: {
   storeId: string;
   reportDate: string;
+  employeeName: string | null;
   existing: Report | null;
   dailyTarget: number;
+  dailyTargetEur: number;
   currency: string;
   workingHours: number;
+  focus: { product_focus: string | null; customer_focus: string | null; activity_focus: string | null } | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -69,7 +75,8 @@ export default function MorningBrief({
             Edit
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        {employeeName && <p className="text-xs text-slate-400 mb-3">{employeeName} · {reportDate}</p>}
+        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
           <div>
             <div className="text-xs text-slate-400">Staff on shift</div>
             <div className="font-medium">{form.staff_count} · {(workingHours * (form.staff_count ?? 0)).toFixed(0)}h total</div>
@@ -78,16 +85,25 @@ export default function MorningBrief({
             <div className="text-xs text-slate-400">Today's target</div>
             <div className="font-medium">
               {dailyTarget.toLocaleString("de-DE")} {currency}
+              <span className="text-slate-400"> · {dailyTargetEur.toLocaleString("de-DE")} EUR</span>
             </div>
           </div>
         </div>
+        {focus && (focus.product_focus || focus.customer_focus || focus.activity_focus) && (
+          <div className="bg-slate-50 rounded-lg px-3 py-2 text-xs space-y-1">
+            {focus.product_focus && <div><span className="text-slate-400">Product focus:</span> {focus.product_focus}</div>}
+            {focus.customer_focus && <div><span className="text-slate-400">Customer focus:</span> {focus.customer_focus}</div>}
+            {focus.activity_focus && <div><span className="text-slate-400">Activity focus:</span> {focus.activity_focus}</div>}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <h2 className="font-medium mb-4">Morning brief</h2>
+      <h2 className="font-medium mb-1">Morning brief</h2>
+      {employeeName && <p className="text-xs text-slate-400 mb-4">{employeeName} · {reportDate}</p>}
 
       <div className={row}>
         <span className={label}>Staff on shift</span>
@@ -113,7 +129,16 @@ export default function MorningBrief({
 
       <div className="bg-slate-50 rounded-lg px-3 py-2 mb-4 text-sm">
         Today's target: <span className="font-semibold">{dailyTarget.toLocaleString("de-DE")} {currency}</span>
+        <span className="text-slate-400"> · {dailyTargetEur.toLocaleString("de-DE")} EUR</span>
       </div>
+
+      {focus && (focus.product_focus || focus.customer_focus || focus.activity_focus) && (
+        <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4 text-xs space-y-1">
+          {focus.product_focus && <div><span className="text-slate-500">Product focus:</span> {focus.product_focus}</div>}
+          {focus.customer_focus && <div><span className="text-slate-500">Customer focus:</span> {focus.customer_focus}</div>}
+          {focus.activity_focus && <div><span className="text-slate-500">Activity focus:</span> {focus.activity_focus}</div>}
+        </div>
+      )}
 
       <div className={row}>
         <span className={label}>Weather</span>

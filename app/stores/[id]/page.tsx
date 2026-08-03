@@ -10,9 +10,10 @@ import StoreInventoryTable from "@/components/StoreInventoryTable";
 import StoreDeliveryManager from "@/components/StoreDeliveryManager";
 import StoreDailyReportsHistory from "@/components/StoreDailyReportsHistory";
 import StoreWeeklyFocusEditor from "@/components/StoreWeeklyFocusEditor";
+import AdminDailyReportEditor from "@/components/AdminDailyReportEditor";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getWeekStart } from "@/lib/isoWeek";
+import { getWeekStart, getWeekEnd, toDateStr } from "@/lib/isoWeek";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,18 @@ export default async function StoreCardPage({ params }: { params: { id: string }
     ]);
 
   const deliveriesWithCount = (deliveries ?? []).map((d: any) => ({ ...d, item_count: d.store_delivery_items?.length ?? 0 }));
+
+  function round2(n: number) {
+    return Math.round(n * 100) / 100;
+  }
+
+  const fxRate = store.fx_rate_to_eur ?? 1;
+  const overrideMap = new Map((overrides ?? []).map((o) => [o.sku, o.local_price]));
+  const priceList = (products ?? []).map((p) => ({
+    sku: p.sku,
+    product_name: p.product_name,
+    local_price: overrideMap.get(p.sku) ?? round2((p.retail_price_incl_vat ?? 0) * fxRate),
+  }));
 
   // Daily report history with visitor/sales aggregates
   const { data: reports } = await supabase.from("daily_reports").select("*").eq("store_id", params.id).order("report_date", { ascending: false }).limit(60);
@@ -74,11 +87,12 @@ export default async function StoreCardPage({ params }: { params: { id: string }
   });
 
   const weekStart = getWeekStart();
+  const weekEnd = getWeekEnd();
   const { data: focus } = await supabase
     .from("store_weekly_focus")
     .select("*")
     .eq("store_id", params.id)
-    .eq("week_start_date", weekStart.toISOString().slice(0, 10))
+    .eq("week_start_date", toDateStr(weekStart))
     .maybeSingle();
 
   return (
@@ -94,14 +108,22 @@ export default async function StoreCardPage({ params }: { params: { id: string }
             key: "general",
             label: "General",
             content: (
-              <div className="max-w-xl bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm">
-                <StoreForm store={store} />
+              <div className="space-y-6">
+                <div className="max-w-xl bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm">
+                  <h2 className="font-medium mb-4">Store Info</h2>
+                  <StoreForm store={store} />
+                </div>
+                <div>
+                  <h2 className="font-medium mb-3">Schedule</h2>
+                  <StoreScheduleEditor storeId={store.id} schedule={schedule ?? []} />
+                </div>
+                <div>
+                  <h2 className="font-medium mb-3">Staff</h2>
+                  <StoreStaffManager storeId={store.id} staff={staff ?? []} />
+                </div>
               </div>
             ),
           },
-          { key: "schedule", label: "Schedule", content: <StoreScheduleEditor storeId={store.id} schedule={schedule ?? []} /> },
-          { key: "staff", label: "Staff", content: <StoreStaffManager storeId={store.id} staff={staff ?? []} /> },
-          { key: "focus", label: "Weekly Focus", content: <StoreWeeklyFocusEditor storeId={store.id} weekStart={weekStart} focus={focus} editable /> },
           {
             key: "prices",
             label: "Price List",
@@ -118,7 +140,30 @@ export default async function StoreCardPage({ params }: { params: { id: string }
           { key: "plan", label: "Sales Plan", content: <StoreSalesPlanEditor storeId={store.id} plans={plans ?? []} currency={store.currency} /> },
           { key: "inventory", label: "Inventory", content: <StoreInventoryTable stock={stock ?? []} /> },
           { key: "deliveries", label: "Deliveries", content: <StoreDeliveryManager storeId={store.id} products={products ?? []} deliveries={deliveriesWithCount} /> },
-          { key: "reports", label: "Daily Reports", content: <StoreDailyReportsHistory rows={reportRows} currency={store.currency} /> },
+          {
+            key: "reports",
+            label: "Daily Reports",
+            content: (
+              <div className="space-y-6">
+                <StoreWeeklyFocusEditor storeId={store.id} weekStart={weekStart} weekEnd={weekEnd} focus={focus} editable />
+                <div>
+                  <h2 className="font-medium mb-3">Add / Correct a Report</h2>
+                  <AdminDailyReportEditor
+                    storeId={store.id}
+                    currency={store.currency}
+                    fxRate={fxRate}
+                    schedule={schedule ?? []}
+                    plans={plans ?? []}
+                    products={priceList}
+                  />
+                </div>
+                <div>
+                  <h2 className="font-medium mb-3">History</h2>
+                  <StoreDailyReportsHistory rows={reportRows} currency={store.currency} />
+                </div>
+              </div>
+            ),
+          },
         ]}
       />
     </AppShell>

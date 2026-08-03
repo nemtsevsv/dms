@@ -9,11 +9,13 @@ import { Check } from "lucide-react";
 export default function StoreWeeklyFocusEditor({
   storeId,
   weekStart,
+  weekEnd,
   focus,
   editable,
 }: {
   storeId: string;
   weekStart: Date;
+  weekEnd: Date;
   focus: { product_focus: string | null; customer_focus: string | null; activity_focus: string | null } | null;
   editable: boolean;
 }) {
@@ -24,6 +26,8 @@ export default function StoreWeeklyFocusEditor({
   const [activity, setActivity] = useState(focus?.activity_focus ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const period = `${weekStart.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })} – ${weekEnd.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })}`;
 
   async function save() {
     setSaving(true);
@@ -53,7 +57,7 @@ export default function StoreWeeklyFocusEditor({
   if (!editable) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-medium mb-3">This week's focus</h3>
+        <h3 className="text-sm font-medium mb-3">This week's focus <span className="text-slate-400 font-normal">({period})</span></h3>
         <dl className="space-y-2 text-sm">
           <div>
             <dt className="text-xs text-slate-400">Product focus</dt>
@@ -74,7 +78,7 @@ export default function StoreWeeklyFocusEditor({
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <h3 className="text-sm font-medium mb-3">This week's focus (visible to the whole team)</h3>
+      <h3 className="text-sm font-medium mb-3">This week's focus <span className="text-slate-400 font-normal">({period}) — visible to the whole team</span></h3>
       <div className="space-y-3">
         <div>
           <label className="block text-xs text-slate-500 mb-1">Product focus</label>

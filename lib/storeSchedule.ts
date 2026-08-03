@@ -35,3 +35,17 @@ export function defaultSchedule(): { day_of_week: number; is_open: boolean; open
     close_time: "18:00",
   }));
 }
+
+// One-hour traffic slots between opening and closing time for a given date,
+// e.g. open 11:00-20:00 -> ["11:00-12:00", "12:00-13:00", ... "19:00-20:00"].
+export function getHourSlotsForDate(schedule: ScheduleRow[], date: Date): { startHour: number; label: string }[] {
+  const row = schedule.find((s) => s.day_of_week === date.getDay());
+  if (!row || !row.is_open || !row.open_time || !row.close_time) return [];
+  const openHour = Number(row.open_time.split(":")[0]);
+  const closeHour = Number(row.close_time.split(":")[0]);
+  const slots: { startHour: number; label: string }[] = [];
+  for (let h = openHour; h < closeHour; h++) {
+    slots.push({ startHour: h, label: `${String(h).padStart(2, "0")}–${String(h + 1).padStart(2, "0")}` });
+  }
+  return slots;
+}

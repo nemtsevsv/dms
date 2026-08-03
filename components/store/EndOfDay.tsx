@@ -13,7 +13,9 @@ export default function EndOfDay({
   dailyAchievementPct,
   monthAchievementPct,
   visitors,
+  newVisitors,
   receipts,
+  salesTotal,
   callsThisWeekPct,
   testDrivesThisWeekPct,
 }: {
@@ -23,7 +25,9 @@ export default function EndOfDay({
   dailyAchievementPct: number;
   monthAchievementPct: number;
   visitors: number;
+  newVisitors: number;
   receipts: number;
+  salesTotal: number;
   callsThisWeekPct: number;
   testDrivesThisWeekPct: number;
 }) {
@@ -34,6 +38,9 @@ export default function EndOfDay({
   const [saved, setSaved] = useState(false);
 
   const conversionPct = visitors > 0 ? (receipts / visitors) * 100 : 0;
+  const newVisitorRatePct = visitors > 0 ? (newVisitors / visitors) * 100 : 0;
+  const avgReceipt = receipts > 0 ? salesTotal / receipts : 0;
+  const avgSalePerVisitor = visitors > 0 ? salesTotal / visitors : 0;
 
   async function save(newValue: number) {
     setValue(newValue);
@@ -53,8 +60,20 @@ export default function EndOfDay({
         <ProgressBar label="Target achievement (today)" pct={dailyAchievementPct} colorClass="bg-emerald-600" />
         <ProgressBar label="Target achievement (this month)" pct={monthAchievementPct} colorClass="bg-slate-900" />
         <ProgressBar label="Conversion rate" pct={conversionPct} hint={`${receipts} receipts / ${visitors} visitors`} colorClass="bg-blue-600" />
+        <ProgressBar label="New visitor rate" pct={newVisitorRatePct} hint={`${newVisitors} new / ${visitors} total`} colorClass="bg-sky-500" />
         <ProgressBar label="Calls/Messages KPI (35/week)" pct={callsThisWeekPct} colorClass="bg-amber-500" />
         <ProgressBar label="Test-Drives KPI (10/week)" pct={testDrivesThisWeekPct} colorClass="bg-amber-500" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div className="text-xs text-slate-400">Avg. sale per receipt</div>
+          <div className="font-medium">{avgReceipt.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-400">Avg. sale per visitor</div>
+          <div className="font-medium">{avgSalePerVisitor.toLocaleString("de-DE", { maximumFractionDigits: 0 })}</div>
+        </div>
       </div>
 
       <div>
