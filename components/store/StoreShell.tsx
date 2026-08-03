@@ -11,9 +11,12 @@ export default async function StoreShell({ storeId, wide, children }: { storeId:
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-semibold text-sm truncate">{store?.name ?? "Store"}</div>
-          <div className="text-xs text-slate-400">{format(new Date(), "EEEE, dd MMMM yyyy")}</div>
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo-leica.png" alt="Leica" className="h-7 w-7 rounded-full shrink-0" />
+          <div className="min-w-0">
+            <div className="font-semibold text-sm truncate">{store?.name ?? "Store"}</div>
+            <div className="text-xs text-slate-400">{format(new Date(), "EEEE, dd MMMM yyyy")}</div>
+          </div>
         </div>
         <StoreLogoutButton />
       </header>
