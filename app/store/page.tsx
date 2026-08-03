@@ -234,7 +234,7 @@ export default async function StoreHomePage() {
           {
             key: "inventory",
             label: "Inventory",
-            content: <StoreInventoryTable stock={stockWithValue} currency={store?.currency ?? "EUR"} />,
+            content: <StoreInventoryTable stock={stockWithValue} currency={store?.currency ?? "EUR"} fxRate={fxRate} />,
           },
           {
             key: "month",

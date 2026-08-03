@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 type StockRow = { sku: string; product_name: string | null; quantity: number; rsp: number; value: number };
 
-export default function StoreInventoryTable({ stock, currency }: { stock: StockRow[]; currency: string }) {
+export default function StoreInventoryTable({ stock, currency, fxRate }: { stock: StockRow[]; currency: string; fxRate: number }) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -17,6 +17,7 @@ export default function StoreInventoryTable({ stock, currency }: { stock: StockR
 
   const totalQty = filtered.reduce((s, r) => s + r.quantity, 0);
   const totalValue = filtered.reduce((s, r) => s + r.value, 0);
+  const totalValueEur = fxRate > 0 ? totalValue / fxRate : 0;
 
   return (
     <div>
@@ -35,6 +36,7 @@ export default function StoreInventoryTable({ stock, currency }: { stock: StockR
               <th className="text-right px-4 py-3">In Stock</th>
               <th className="text-right px-4 py-3">RSP incl. VAT</th>
               <th className="text-right px-4 py-3">Value</th>
+              <th className="text-right px-4 py-3">Value (EUR)</th>
             </tr>
           </thead>
           <tbody>
@@ -47,6 +49,7 @@ export default function StoreInventoryTable({ stock, currency }: { stock: StockR
               <td className="px-4 py-3 text-right">
                 {totalValue.toLocaleString("de-DE")} {currency}
               </td>
+              <td className="px-4 py-3 text-right">{Math.round(totalValueEur).toLocaleString("de-DE")} EUR</td>
             </tr>
             {filtered.map((s) => (
               <tr key={s.sku} className="border-t border-slate-100">
@@ -57,11 +60,12 @@ export default function StoreInventoryTable({ stock, currency }: { stock: StockR
                 <td className="px-4 py-3 text-right">
                   {s.value.toLocaleString("de-DE")} {currency}
                 </td>
+                <td className="px-4 py-3 text-right text-slate-500">{Math.round(fxRate > 0 ? s.value / fxRate : 0).toLocaleString("de-DE")} EUR</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-slate-400">
+                <td colSpan={6} className="text-center py-8 text-slate-400">
                   No stock recorded yet
                 </td>
               </tr>

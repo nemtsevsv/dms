@@ -270,6 +270,7 @@ end $$;
 
 create policy "staff_read_own_store" on stores for select to authenticated using (is_store_staff() and id = my_store_id());
 create policy "staff_read_own_store" on store_schedule for select to authenticated using (is_store_staff() and store_id = my_store_id());
+create policy "staff_read_own_row" on store_users for select to authenticated using (is_store_staff() and email = auth.jwt() ->> 'email');
 create policy "staff_read_own_store" on store_price_overrides for select to authenticated using (is_store_staff() and store_id = my_store_id());
 create policy "staff_read_own_store" on store_sales_plan for select to authenticated using (is_store_staff() and store_id = my_store_id());
 create policy "staff_read_own_store" on store_deliveries for select to authenticated using (is_store_staff() and store_id = my_store_id());

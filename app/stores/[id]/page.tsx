@@ -144,7 +144,7 @@ export default async function StoreCardPage({ params }: { params: { id: string }
             ),
           },
           { key: "plan", label: "Sales Plan", content: <StoreSalesPlanEditor storeId={store.id} plans={plans ?? []} currency={store.currency} fxRate={fxRate} /> },
-          { key: "inventory", label: "Inventory", content: <StoreInventoryTable stock={stockWithValue} currency={store.currency} /> },
+          { key: "inventory", label: "Inventory", content: <StoreInventoryTable stock={stockWithValue} currency={store.currency} fxRate={fxRate} /> },
           { key: "deliveries", label: "Deliveries", content: <StoreDeliveryManager storeId={store.id} products={products ?? []} deliveries={deliveriesWithCount} /> },
           {
             key: "reports",

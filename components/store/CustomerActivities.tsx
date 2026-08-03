@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Minus } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 
 type EventType = "call" | "test_drive";
 type CustomerType = "new" | "existing";
@@ -17,15 +17,21 @@ export default function CustomerActivities({
   storeId,
   reportDate,
   counts,
+  onChange,
 }: {
   storeId: string;
   reportDate: string;
   counts: Record<string, number>; // key = `${type}-${customerType}`
+  onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [pending, setPending] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
+
+  function refresh() {
+    router.refresh();
+    onChange?.();
+  }
 
   async function tap(type: EventType, customerType: CustomerType) {
     const key = `${type}-${customerType}`;
@@ -41,9 +47,7 @@ export default function CustomerActivities({
       created_by: user?.email ?? null,
     });
     setPending(null);
-    setFlash(key);
-    setTimeout(() => setFlash(null), 500);
-    router.refresh();
+    refresh();
   }
 
   async function undo(type: EventType, customerType: CustomerType) {
@@ -64,48 +68,60 @@ export default function CustomerActivities({
       await supabase.from("store_traffic_events").delete().eq("id", recent[0].id);
     }
     setPending(null);
-    router.refresh();
+    refresh();
+  }
+
+  function Cell({ type, ct }: { type: EventType; ct: CustomerType }) {
+    const key = `${type}-${ct}`;
+    const count = counts[key] ?? 0;
+    return (
+      <div className="flex items-center justify-center gap-1">
+        <button
+          onClick={() => undo(type, ct)}
+          disabled={pending === `undo-${key}` || count === 0}
+          aria-label={`-1 ${ct} ${type}`}
+          className="w-6 h-6 flex items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30"
+        >
+          <Minus size={11} />
+        </button>
+        <span className="w-5 text-center text-sm font-medium tabular-nums">{count}</span>
+        <button
+          onClick={() => tap(type, ct)}
+          disabled={pending === key}
+          aria-label={`+1 ${ct} ${type}`}
+          className="w-6 h-6 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+        >
+          <Plus size={11} />
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <h2 className="font-medium mb-4">Customer activities</h2>
-      <div className="space-y-3">
-        {ROWS.map((row) => (
-          <div key={row.type}>
-            <div className="text-xs text-slate-500 mb-1">{row.label}</div>
-            <div className="grid grid-cols-2 gap-2">
-              {(["new", "existing"] as CustomerType[]).map((ct) => {
-                const key = `${row.type}-${ct}`;
-                const count = counts[key] ?? 0;
-                const isFlashing = flash === key;
-                return (
-                  <div key={ct} className="flex items-stretch gap-1">
-                    <button
-                      onClick={() => tap(row.type, ct)}
-                      disabled={pending === key}
-                      className={`flex-1 flex items-center justify-between px-4 py-3 md:py-2 rounded-xl border transition-colors disabled:opacity-50 ${
-                        isFlashing ? "bg-emerald-100 border-emerald-400" : "border-slate-300 hover:bg-slate-50 active:bg-slate-100"
-                      }`}
-                    >
-                      <span className="text-sm capitalize">+1 {ct}</span>
-                      <span className="text-lg font-semibold">{count}</span>
-                    </button>
-                    <button
-                      onClick={() => undo(row.type, ct)}
-                      disabled={pending === `undo-${key}` || count === 0}
-                      aria-label={`Remove one ${ct} ${row.label}`}
-                      className="w-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 disabled:opacity-30"
-                    >
-                      <Minus size={14} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      <h2 className="font-medium mb-3">Customer activities</h2>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-xs text-slate-400">
+            <th className="text-left font-normal pb-1"></th>
+            <th className="font-normal pb-1">New</th>
+            <th className="font-normal pb-1">Existing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ROWS.map((row) => (
+            <tr key={row.type} className="border-t border-slate-50">
+              <td className="py-1.5 text-xs text-slate-500">{row.label}</td>
+              <td className="py-1.5">
+                <Cell type={row.type} ct="new" />
+              </td>
+              <td className="py-1.5">
+                <Cell type={row.type} ct="existing" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

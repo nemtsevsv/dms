@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Minus } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 
 type Slot = { startHour: number; label: string };
 
@@ -12,23 +12,24 @@ export default function VisitorTrafficSlots({
   reportDate,
   slots,
   slotCounts,
+  onChange,
 }: {
   storeId: string;
   reportDate: string;
   slots: Slot[];
   slotCounts: Record<string, number>; // key = `${startHour}-new` / `${startHour}-existing`
+  onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [pending, setPending] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
 
   const totalNew = slots.reduce((s, sl) => s + (slotCounts[`${sl.startHour}-new`] ?? 0), 0);
   const totalExisting = slots.reduce((s, sl) => s + (slotCounts[`${sl.startHour}-existing`] ?? 0), 0);
 
-  function flashKey(key: string) {
-    setFlash(key);
-    setTimeout(() => setFlash(null), 500);
+  function refresh() {
+    router.refresh();
+    onChange?.();
   }
 
   async function tap(startHour: number, customerType: "new" | "existing") {
@@ -49,8 +50,7 @@ export default function VisitorTrafficSlots({
       created_by: user?.email ?? null,
     });
     setPending(null);
-    flashKey(key);
-    router.refresh();
+    refresh();
   }
 
   async function undo(startHour: number, customerType: "new" | "existing") {
@@ -73,55 +73,74 @@ export default function VisitorTrafficSlots({
       await supabase.from("store_traffic_events").delete().eq("id", match.id);
     }
     setPending(null);
-    router.refresh();
+    refresh();
+  }
+
+  function Cell({ startHour, ct }: { startHour: number; ct: "new" | "existing" }) {
+    const key = `${startHour}-${ct}`;
+    const count = slotCounts[key] ?? 0;
+    return (
+      <div className="flex items-center justify-center gap-1">
+        <button
+          onClick={() => undo(startHour, ct)}
+          disabled={pending === `undo-${key}` || count === 0}
+          aria-label={`-1 ${ct} for ${startHour}:00`}
+          className="w-5 h-5 flex items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30"
+        >
+          <Minus size={10} />
+        </button>
+        <span className="w-4 text-center text-sm font-medium tabular-nums">{count}</span>
+        <button
+          onClick={() => tap(startHour, ct)}
+          disabled={pending === key}
+          aria-label={`+1 ${ct} for ${startHour}:00`}
+          className="w-5 h-5 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+        >
+          <Plus size={10} />
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="font-medium">Visitor traffic</h2>
         <span className="text-sm text-slate-500">
-          Total: <span className="font-semibold text-slate-800">{totalNew + totalExisting}</span> ({totalNew} new · {totalExisting} existing)
+          Total: <span className="font-semibold text-slate-800">{totalNew + totalExisting}</span>
         </span>
       </div>
 
       {slots.length === 0 ? (
         <p className="text-sm text-slate-400">No opening hours set for today — set the schedule first.</p>
       ) : (
-        <div className="space-y-2">
-          {slots.map((slot) => (
-            <div key={slot.startHour} className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 w-14 shrink-0">{slot.label}</span>
-              {(["new", "existing"] as const).map((ct) => {
-                const key = `${slot.startHour}-${ct}`;
-                const count = slotCounts[key] ?? 0;
-                const isFlashing = flash === key;
-                return (
-                  <div key={ct} className="flex-1 flex items-stretch gap-1">
-                    <button
-                      onClick={() => tap(slot.startHour, ct)}
-                      disabled={pending === key}
-                      className={`flex-1 flex items-center justify-between px-3 py-2 md:py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                        isFlashing ? "bg-emerald-100 border-emerald-400" : "border-slate-300 hover:bg-slate-50 active:bg-slate-100"
-                      }`}
-                    >
-                      <span className="text-xs capitalize">+1 {ct}</span>
-                      <span className="text-base font-semibold">{count}</span>
-                    </button>
-                    <button
-                      onClick={() => undo(slot.startHour, ct)}
-                      disabled={pending === `undo-${key}` || count === 0}
-                      aria-label={`Remove one ${ct} visitor from ${slot.label}`}
-                      className="w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 disabled:opacity-30"
-                    >
-                      <Minus size={13} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-xs text-slate-400">
+              <th className="text-left font-normal pb-1 w-14">Slot</th>
+              <th className="font-normal pb-1">New</th>
+              <th className="font-normal pb-1">Existing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slots.map((slot) => (
+              <tr key={slot.startHour} className="border-t border-slate-50">
+                <td className="py-1 text-xs text-slate-400">{slot.label}</td>
+                <td className="py-1">
+                  <Cell startHour={slot.startHour} ct="new" />
+                </td>
+                <td className="py-1">
+                  <Cell startHour={slot.startHour} ct="existing" />
+                </td>
+              </tr>
+            ))}
+            <tr className="border-t border-slate-200 font-medium">
+              <td className="py-1.5 text-xs text-slate-500">Total</td>
+              <td className="py-1.5 text-center">{totalNew}</td>
+              <td className="py-1.5 text-center">{totalExisting}</td>
+            </tr>
+          </tbody>
+        </table>
       )}
     </div>
   );

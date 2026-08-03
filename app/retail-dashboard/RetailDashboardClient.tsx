@@ -3,37 +3,38 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import RetailFunnel from "./RetailFunnel";
+import MonthlyTargetActualChart from "./MonthlyTargetActualChart";
+import WeeklySalesChart from "./WeeklySalesChart";
+
+type ChartMonth = { label: string; target: number; actual: number; traffic: number };
+type ChartDay = { label: string; actual: number; traffic: number };
 
 type StoreMetrics = {
   id: string;
   name: string;
   currency: string;
-  trafficToday: number;
-  testDrivesToday: number;
-  receiptsToday: number;
+  trafficThisWeek: number;
+  testDrivesThisWeek: number;
+  receiptsThisWeek: number;
   conversionPct: number;
   monthSalesEur: number;
-  monthPlanEur: number;
   achievementPct: number;
   hasReportToday: boolean;
+  funnel: { visitors: number; testDrives: number; receipts: number };
+  monthlyChart: ChartMonth[];
+  weeklyChart: ChartDay[];
   topSellers: { email: string; totalEur: number }[];
 };
+
+const CONVERSION_TARGET_PCT = 15;
+const TEST_DRIVE_TARGET_PER_WEEK = 10;
 
 function achievementColor(pct: number) {
   if (pct <= 30) return "text-red-600";
   if (pct <= 50) return "text-orange-600";
   if (pct <= 75) return "text-amber-600";
   return "text-emerald-600";
-}
-
-function Widget({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <div className="text-xs font-medium text-slate-500 mb-1">{label}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      {hint && <div className="text-xs text-slate-400 mt-1">{hint}</div>}
-    </div>
-  );
 }
 
 export default function RetailDashboardClient({ stores }: { stores: StoreMetrics[] }) {
@@ -67,10 +68,24 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-        <Widget label="Traffic Today" value={selected.trafficToday} />
-        <Widget label="Test-Drives Today" value={selected.testDrivesToday} />
-        <Widget label="Receipts Today" value={selected.receiptsToday} />
-        <Widget label="Conversion" value={`${Math.round(selected.conversionPct)}%`} />
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="text-xs font-medium text-slate-500 mb-1">Traffic This Week</div>
+          <div className="text-2xl font-semibold">{selected.trafficThisWeek}</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="text-xs font-medium text-slate-500 mb-1">Test-Drives This Week</div>
+          <div className="text-2xl font-semibold">{selected.testDrivesThisWeek}</div>
+          <div className="text-xs text-slate-400 mt-1">Target: {TEST_DRIVE_TARGET_PER_WEEK}/week</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="text-xs font-medium text-slate-500 mb-1">Receipts This Week</div>
+          <div className="text-2xl font-semibold">{selected.receiptsThisWeek}</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="text-xs font-medium text-slate-500 mb-1">Conversion</div>
+          <div className="text-2xl font-semibold">{Math.round(selected.conversionPct)}%</div>
+          <div className="text-xs text-slate-400 mt-1">Target: {CONVERSION_TARGET_PCT}%</div>
+        </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="text-xs font-medium text-slate-500 mb-1">Month Sales (EUR)</div>
           <div className="text-2xl font-semibold">{Math.round(selected.monthSalesEur).toLocaleString("de-DE")}</div>
@@ -78,47 +93,65 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {top && (
-          <div className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
-            <div className="text-xs font-medium text-slate-500 mb-1">🏆 Top Store</div>
-            <div className="font-semibold">{top.name}</div>
-            <div className="text-sm text-slate-500 mt-1">
-              {Math.round(top.monthSalesEur).toLocaleString("de-DE")} EUR ·{" "}
-              <span className={achievementColor(top.achievementPct)}>{Math.round(top.achievementPct)}%</span>
-            </div>
-          </div>
-        )}
-        {lowest && lowest !== top && (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div className="text-xs font-medium text-slate-500 mb-1">Lowest Store</div>
-            <div className="font-semibold">{lowest.name}</div>
-            <div className="text-sm text-slate-500 mt-1">
-              {Math.round(lowest.monthSalesEur).toLocaleString("de-DE")} EUR ·{" "}
-              <span className={achievementColor(lowest.achievementPct)}>{Math.round(lowest.achievementPct)}%</span>
-            </div>
-          </div>
-        )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="text-xs font-medium text-slate-500 mb-2">Reports Missing Today</div>
-          {missingReports.length === 0 ? (
-            <div className="text-sm text-emerald-600">All stores reported</div>
-          ) : (
-            <ul className="space-y-1">
-              {missingReports.map((s) => (
-                <li key={s.id} className="flex items-center gap-2 text-sm text-amber-700">
-                  <AlertTriangle size={13} />
-                  <Link href={`/stores/${s.id}`} className="hover:underline">
-                    {s.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          <h2 className="font-medium mb-4">Store Conversion Funnel (this month)</h2>
+          <RetailFunnel visitors={selected.funnel.visitors} testDrives={selected.funnel.testDrives} receipts={selected.funnel.receipts} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {top && (
+            <div className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs font-medium text-slate-500 mb-1">🏆 Top Store</div>
+              <div className="font-semibold">{top.name}</div>
+              <div className="text-sm text-slate-500 mt-1">
+                {Math.round(top.monthSalesEur).toLocaleString("de-DE")} EUR ·{" "}
+                <span className={achievementColor(top.achievementPct)}>{Math.round(top.achievementPct)}%</span>
+              </div>
+            </div>
           )}
+          {lowest && lowest !== top && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs font-medium text-slate-500 mb-1">Lowest Store</div>
+              <div className="font-semibold">{lowest.name}</div>
+              <div className="text-sm text-slate-500 mt-1">
+                {Math.round(lowest.monthSalesEur).toLocaleString("de-DE")} EUR ·{" "}
+                <span className={achievementColor(lowest.achievementPct)}>{Math.round(lowest.achievementPct)}%</span>
+              </div>
+            </div>
+          )}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div className="text-xs font-medium text-slate-500 mb-2">Reports Missing Today</div>
+            {missingReports.length === 0 ? (
+              <div className="text-sm text-emerald-600">All stores reported</div>
+            ) : (
+              <ul className="space-y-1">
+                {missingReports.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 text-sm text-amber-700">
+                    <AlertTriangle size={13} />
+                    <Link href={`/stores/${s.id}`} className="hover:underline">
+                      {s.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <h2 className="font-medium mb-4">Sales Target vs Actual — by Month</h2>
+          <MonthlyTargetActualChart data={selected.monthlyChart} />
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <h2 className="font-medium mb-4">Actual Sales — This Week</h2>
+          <WeeklySalesChart data={selected.weeklyChart} />
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
         <div className="text-xs font-medium text-slate-500 mb-2">Top Sellers (this month) — {selected.name}</div>
         {selected.topSellers.length === 0 ? (
           <p className="text-sm text-slate-400">No sales recorded yet this month</p>

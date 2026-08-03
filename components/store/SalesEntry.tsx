@@ -36,6 +36,7 @@ export default function SalesEntry({
   dailyTarget,
   soldItemsToday,
   isAdmin,
+  onChange,
 }: {
   storeId: string;
   reportDate: string;
@@ -48,6 +49,7 @@ export default function SalesEntry({
   dailyTarget: number;
   soldItemsToday: SoldItem[];
   isAdmin: boolean;
+  onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -117,6 +119,7 @@ export default function SalesEntry({
     setSaving(false);
     setOpen(false);
     router.refresh();
+    onChange?.();
   }
 
   // Admin-only corrections. Inventory is adjusted by the delta via a
@@ -145,6 +148,7 @@ export default function SalesEntry({
       });
     }
     router.refresh();
+    onChange?.();
   }
 
   async function adminDeleteItem(item: SoldItem) {
@@ -165,6 +169,7 @@ export default function SalesEntry({
       });
     }
     router.refresh();
+    onChange?.();
   }
 
   return (

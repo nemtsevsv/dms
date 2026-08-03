@@ -36,6 +36,8 @@ export default function AdminDailyReportEditor({
   const [dateStr, setDateStr] = useState(toDateStr(new Date()));
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+  const reload = () => setReloadTick((t) => t + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +62,7 @@ export default function AdminDailyReportEditor({
     return () => {
       cancelled = true;
     };
-  }, [dateStr, storeId]);
+  }, [dateStr, storeId, reloadTick]);
 
   if (loading || !data) {
     return (
@@ -152,9 +154,10 @@ export default function AdminDailyReportEditor({
         currency={currency}
         workingHours={workingHours}
         focus={null}
+        onChange={reload}
       />
-      <VisitorTrafficSlots storeId={storeId} reportDate={dateStr} slots={slots} slotCounts={slotCounts} />
-      <CustomerActivities storeId={storeId} reportDate={dateStr} counts={activityCounts} />
+      <VisitorTrafficSlots storeId={storeId} reportDate={dateStr} slots={slots} slotCounts={slotCounts} onChange={reload} />
+      <CustomerActivities storeId={storeId} reportDate={dateStr} counts={activityCounts} onChange={reload} />
       <SalesEntry
         storeId={storeId}
         reportDate={dateStr}
@@ -167,6 +170,7 @@ export default function AdminDailyReportEditor({
         dailyTarget={round2(dailyTarget)}
         soldItemsToday={soldItemsToday}
         isAdmin={true}
+        onChange={reload}
       />
       <EndOfDay
         storeId={storeId}
@@ -180,6 +184,7 @@ export default function AdminDailyReportEditor({
         salesTotal={todaySalesTotal}
         callsThisWeekPct={(callsThisWeek / 35) * 100}
         testDrivesThisWeekPct={(testDrivesThisWeek / 10) * 100}
+        onChange={reload}
       />
     </div>
   );

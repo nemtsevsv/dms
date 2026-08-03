@@ -26,6 +26,7 @@ export default function MorningBrief({
   currency,
   workingHours,
   focus,
+  onChange,
 }: {
   storeId: string;
   reportDate: string;
@@ -36,6 +37,7 @@ export default function MorningBrief({
   currency: string;
   workingHours: number;
   focus: { product_focus: string | null; customer_focus: string | null; activity_focus: string | null } | null;
+  onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -61,6 +63,7 @@ export default function MorningBrief({
     setSaving(false);
     setEditing(false);
     router.refresh();
+    onChange?.();
   }
 
   const row = "grid grid-cols-1 gap-1 mb-4";

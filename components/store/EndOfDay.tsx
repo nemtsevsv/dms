@@ -18,6 +18,7 @@ export default function EndOfDay({
   salesTotal,
   callsThisWeekPct,
   testDrivesThisWeekPct,
+  onChange,
 }: {
   storeId: string;
   reportDate: string;
@@ -30,6 +31,7 @@ export default function EndOfDay({
   salesTotal: number;
   callsThisWeekPct: number;
   testDrivesThisWeekPct: number;
+  onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -49,6 +51,7 @@ export default function EndOfDay({
     setSaving(false);
     setSaved(true);
     router.refresh();
+    onChange?.();
     setTimeout(() => setSaved(false), 1500);
   }
 
