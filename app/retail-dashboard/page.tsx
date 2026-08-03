@@ -19,14 +19,14 @@ export default async function RetailDashboardPage() {
           .from("store_traffic_events")
           .select("event_type")
           .eq("store_id", store.id)
-          .gte("occurred_at", `${todayStr}T00:00:00`)
-          .lte("occurred_at", `${todayStr}T23:59:59`),
+          .gte("occurred_at", `${todayStr}T00:00:00Z`)
+          .lte("occurred_at", `${todayStr}T23:59:59Z`),
         supabase
           .from("store_receipts")
           .select("id")
           .eq("store_id", store.id)
-          .gte("occurred_at", `${todayStr}T00:00:00`)
-          .lte("occurred_at", `${todayStr}T23:59:59`),
+          .gte("occurred_at", `${todayStr}T00:00:00Z`)
+          .lte("occurred_at", `${todayStr}T23:59:59Z`),
         supabase
           .from("store_sales_plan")
           .select("plan_amount_local")
@@ -36,9 +36,9 @@ export default async function RetailDashboardPage() {
           .maybeSingle(),
         supabase
           .from("store_receipts")
-          .select("occurred_at, store_receipt_items(total)")
+          .select("occurred_at, created_by, store_receipt_items(total)")
           .eq("store_id", store.id)
-          .gte("occurred_at", `${monthStart}T00:00:00`),
+          .gte("occurred_at", `${monthStart}T00:00:00Z`),
         supabase.from("daily_reports").select("id").eq("store_id", store.id).eq("report_date", todayStr).maybeSingle(),
       ]);
 
@@ -57,6 +57,18 @@ export default async function RetailDashboardPage() {
       const monthPlanEur = monthPlanLocal / fxRate;
       const achievementPct = monthPlanLocal > 0 ? (monthSalesLocal / monthPlanLocal) * 100 : 0;
 
+      // Top sellers this month, by who is on each receipt (store_receipts.created_by)
+      const sellerTotals = new Map<string, number>();
+      for (const r of monthReceipts ?? []) {
+        const seller = (r as any).created_by ?? "Unknown";
+        const sum = ((r as any).store_receipt_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0);
+        sellerTotals.set(seller, (sellerTotals.get(seller) ?? 0) + sum);
+      }
+      const topSellers = Array.from(sellerTotals.entries())
+        .map(([email, totalLocal]) => ({ email, totalEur: totalLocal / fxRate }))
+        .sort((a, b) => b.totalEur - a.totalEur)
+        .slice(0, 5);
+
       return {
         id: store.id,
         name: store.name,
@@ -69,6 +81,7 @@ export default async function RetailDashboardPage() {
         monthPlanEur,
         achievementPct,
         hasReportToday: !!reportToday,
+        topSellers,
       };
     })
   );

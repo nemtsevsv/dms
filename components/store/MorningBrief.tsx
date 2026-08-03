@@ -111,7 +111,7 @@ export default function MorningBrief({
           <button
             type="button"
             onClick={() => update("staff_count", Math.max(0, (form.staff_count ?? 0) - 1))}
-            className="w-11 h-11 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 active:bg-slate-100"
+            className="w-11 h-11 md:w-8 md:h-8 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 active:bg-slate-100"
           >
             <Minus size={18} />
           </button>
@@ -119,7 +119,7 @@ export default function MorningBrief({
           <button
             type="button"
             onClick={() => update("staff_count", (form.staff_count ?? 0) + 1)}
-            className="w-11 h-11 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 active:bg-slate-100"
+            className="w-11 h-11 md:w-8 md:h-8 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 active:bg-slate-100"
           >
             <Plus size={18} />
           </button>
@@ -168,7 +168,7 @@ export default function MorningBrief({
       <button
         onClick={save}
         disabled={saving}
-        className="w-full py-3 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+        className="w-full py-3 md:py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
       >
         {saving ? "Saving..." : "Start the day"}
       </button>

@@ -16,6 +16,7 @@ type StoreMetrics = {
   monthPlanEur: number;
   achievementPct: number;
   hasReportToday: boolean;
+  topSellers: { email: string; totalEur: number }[];
 };
 
 function achievementColor(pct: number) {
@@ -115,6 +116,24 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="text-xs font-medium text-slate-500 mb-2">Top Sellers (this month) — {selected.name}</div>
+        {selected.topSellers.length === 0 ? (
+          <p className="text-sm text-slate-400">No sales recorded yet this month</p>
+        ) : (
+          <ol className="space-y-1.5">
+            {selected.topSellers.map((s, i) => (
+              <li key={s.email} className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">
+                  {i + 1}. {s.email}
+                </span>
+                <span className="font-medium">{Math.round(s.totalEur).toLocaleString("de-DE")} EUR</span>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   );

@@ -21,9 +21,9 @@ import UserProfileCard from "./UserProfileCard";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
   { href: "/dealers", label: "Dealers", icon: Building2 },
   { href: "/stores", label: "Stores", icon: Store },
-  { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
   { href: "/products", label: "Products", icon: Package },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/tasks", label: "Tasks", icon: ListTodo },

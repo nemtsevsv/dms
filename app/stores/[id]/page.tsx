@@ -51,6 +51,12 @@ export default async function StoreCardPage({ params }: { params: { id: string }
     local_price: overrideMap.get(p.sku) ?? round2((p.retail_price_incl_vat ?? 0) * fxRate),
   }));
 
+  const priceMap = new Map(priceList.map((p) => [p.sku, p.local_price]));
+  const stockWithValue = (stock ?? []).map((s: any) => {
+    const rsp = priceMap.get(s.sku) ?? 0;
+    return { ...s, rsp, value: round2(s.quantity * rsp) };
+  });
+
   // Daily report history with visitor/sales aggregates
   const { data: reports } = await supabase.from("daily_reports").select("*").eq("store_id", params.id).order("report_date", { ascending: false }).limit(60);
   const { data: traffic } = await supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", params.id);
@@ -137,8 +143,8 @@ export default async function StoreCardPage({ params }: { params: { id: string }
               />
             ),
           },
-          { key: "plan", label: "Sales Plan", content: <StoreSalesPlanEditor storeId={store.id} plans={plans ?? []} currency={store.currency} /> },
-          { key: "inventory", label: "Inventory", content: <StoreInventoryTable stock={stock ?? []} /> },
+          { key: "plan", label: "Sales Plan", content: <StoreSalesPlanEditor storeId={store.id} plans={plans ?? []} currency={store.currency} fxRate={fxRate} /> },
+          { key: "inventory", label: "Inventory", content: <StoreInventoryTable stock={stockWithValue} currency={store.currency} /> },
           { key: "deliveries", label: "Deliveries", content: <StoreDeliveryManager storeId={store.id} products={products ?? []} deliveries={deliveriesWithCount} /> },
           {
             key: "reports",
@@ -146,7 +152,7 @@ export default async function StoreCardPage({ params }: { params: { id: string }
             content: (
               <div className="space-y-6">
                 <StoreWeeklyFocusEditor storeId={store.id} weekStart={weekStart} weekEnd={weekEnd} focus={focus} editable />
-                <div>
+                <div className="hidden md:block">
                   <h2 className="font-medium mb-3">Add / Correct a Report</h2>
                   <AdminDailyReportEditor
                     storeId={store.id}
@@ -157,7 +163,7 @@ export default async function StoreCardPage({ params }: { params: { id: string }
                     products={priceList}
                   />
                 </div>
-                <div>
+                <div className="hidden md:block">
                   <h2 className="font-medium mb-3">History</h2>
                   <StoreDailyReportsHistory rows={reportRows} currency={store.currency} />
                 </div>

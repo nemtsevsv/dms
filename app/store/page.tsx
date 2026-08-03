@@ -49,9 +49,9 @@ export default async function StoreHomePage() {
     supabase.from("store_schedule").select("*").eq("store_id", storeId),
     supabase.from("store_sales_plan").select("year, month, plan_amount_local").eq("store_id", storeId),
     supabase.from("daily_reports").select("*").eq("store_id", storeId).eq("report_date", todayStr).maybeSingle(),
-    supabase.from("store_traffic_events").select("event_type, customer_type, occurred_at").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
-    supabase.from("store_traffic_events").select("event_type").eq("store_id", storeId).gte("occurred_at", toDateStr(weekStart) + "T00:00:00").lte("occurred_at", toDateStr(weekEnd) + "T23:59:59"),
-    supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total, item_type)").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00`).lte("occurred_at", `${todayStr}T23:59:59`),
+    supabase.from("store_traffic_events").select("event_type, customer_type, occurred_at").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00Z`).lte("occurred_at", `${todayStr}T23:59:59Z`),
+    supabase.from("store_traffic_events").select("event_type").eq("store_id", storeId).gte("occurred_at", toDateStr(weekStart) + "T00:00:00Z").lte("occurred_at", toDateStr(weekEnd) + "T23:59:59Z"),
+    supabase.from("store_receipts").select("id, occurred_at, created_by, store_receipt_items(id, sku, product_name, quantity, unit_price, total, item_type)").eq("store_id", storeId).gte("occurred_at", `${todayStr}T00:00:00Z`).lte("occurred_at", `${todayStr}T23:59:59Z`),
     supabase.from("store_weekly_focus").select("*").eq("store_id", storeId).eq("week_start_date", toDateStr(weekStart)).maybeSingle(),
     supabase.from("products").select("sku, product_name, retail_price_incl_vat"),
     supabase.from("store_price_overrides").select("sku, local_price").eq("store_id", storeId),
@@ -67,6 +67,11 @@ export default async function StoreHomePage() {
     product_name: p.product_name,
     local_price: overrideMap.get(p.sku) ?? round2((p.retail_price_incl_vat ?? 0) * fxRate),
   }));
+  const priceMapForStock = new Map(priceList.map((p) => [p.sku, p.local_price]));
+  const stockWithValue = (stock ?? []).map((s: any) => {
+    const rsp = priceMapForStock.get(s.sku) ?? 0;
+    return { ...s, rsp, value: round2(s.quantity * rsp) };
+  });
 
   // Today's target = this month's plan / number of scheduled open days this month
   const planMap = new Map((plan ?? []).map((p) => [`${p.year}-${p.month}`, p.plan_amount_local]));
@@ -121,7 +126,7 @@ export default async function StoreHomePage() {
       .from("store_receipts")
       .select("occurred_at, store_receipt_items(total)")
       .eq("store_id", storeId)
-      .gte("occurred_at", `${todayStr.slice(0, 7)}-01T00:00:00`);
+      .gte("occurred_at", `${todayStr.slice(0, 7)}-01T00:00:00Z`);
     monthSalesTotal = (monthReceipts ?? []).reduce(
       (s, r: any) => s + (r.store_receipt_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0),
       0
@@ -155,6 +160,19 @@ export default async function StoreHomePage() {
       selfEvaluation: r.self_evaluation,
     };
   });
+
+  const soldItemsToday = (receiptsToday ?? []).flatMap((r: any) =>
+    (r.store_receipt_items ?? []).map((it: any) => ({
+      itemId: it.id,
+      createdBy: r.created_by,
+      sku: it.sku,
+      productName: it.product_name,
+      quantity: it.quantity,
+      unitPrice: it.unit_price,
+      total: it.total,
+      itemType: it.item_type,
+    }))
+  );
 
   const employeeName = myStaffRow?.display_name || access.email;
 
@@ -194,6 +212,8 @@ export default async function StoreHomePage() {
                   todayCoreTotal={todayCoreTotal}
                   todayAccessoriesTotal={todayAccessoriesTotal}
                   dailyTarget={round2(dailyTarget)}
+                  soldItemsToday={soldItemsToday}
+                  isAdmin={false}
                 />
                 <EndOfDay
                   storeId={storeId}
@@ -214,7 +234,7 @@ export default async function StoreHomePage() {
           {
             key: "inventory",
             label: "Inventory",
-            content: <StoreInventoryTable stock={stock ?? []} />,
+            content: <StoreInventoryTable stock={stockWithValue} currency={store?.currency ?? "EUR"} />,
           },
           {
             key: "month",

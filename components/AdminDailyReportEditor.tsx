@@ -41,14 +41,14 @@ export default function AdminDailyReportEditor({
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const date = new Date(dateStr + "T00:00:00");
+      const date = new Date(dateStr);
       const monthStart = `${dateStr.slice(0, 7)}-01`;
 
       const [{ data: report }, { data: traffic }, { data: receipts }, { data: monthReceipts }] = await Promise.all([
         supabase.from("daily_reports").select("*").eq("store_id", storeId).eq("report_date", dateStr).maybeSingle(),
-        supabase.from("store_traffic_events").select("event_type, customer_type, occurred_at").eq("store_id", storeId).gte("occurred_at", `${dateStr}T00:00:00`).lte("occurred_at", `${dateStr}T23:59:59`),
-        supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total, item_type)").eq("store_id", storeId).gte("occurred_at", `${dateStr}T00:00:00`).lte("occurred_at", `${dateStr}T23:59:59`),
-        supabase.from("store_receipts").select("occurred_at, store_receipt_items(total)").eq("store_id", storeId).gte("occurred_at", `${monthStart}T00:00:00`).lte("occurred_at", `${dateStr}T23:59:59`),
+        supabase.from("store_traffic_events").select("event_type, customer_type, occurred_at").eq("store_id", storeId).gte("occurred_at", `${dateStr}T00:00:00Z`).lte("occurred_at", `${dateStr}T23:59:59Z`),
+        supabase.from("store_receipts").select("id, occurred_at, created_by, store_receipt_items(id, sku, product_name, quantity, unit_price, total, item_type)").eq("store_id", storeId).gte("occurred_at", `${dateStr}T00:00:00Z`).lte("occurred_at", `${dateStr}T23:59:59Z`),
+        supabase.from("store_receipts").select("occurred_at, store_receipt_items(total)").eq("store_id", storeId).gte("occurred_at", `${monthStart}T00:00:00Z`).lte("occurred_at", `${dateStr}T23:59:59Z`),
       ]);
 
       if (!cancelled) {
@@ -116,6 +116,19 @@ export default function AdminDailyReportEditor({
   const monthSalesTotal = monthReceipts.reduce((s: number, r: any) => s + (r.store_receipt_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0), 0);
   const monthAchievementPct = thisMonthPlan > 0 ? (monthSalesTotal / thisMonthPlan) * 100 : 0;
 
+  const soldItemsToday = receipts.flatMap((r: any) =>
+    (r.store_receipt_items ?? []).map((it: any) => ({
+      itemId: it.id,
+      createdBy: r.created_by,
+      sku: it.sku,
+      productName: it.product_name,
+      quantity: it.quantity,
+      unitPrice: it.unit_price,
+      total: it.total,
+      itemType: it.item_type,
+    }))
+  );
+
   return (
     <div className="space-y-4">
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
@@ -152,6 +165,8 @@ export default function AdminDailyReportEditor({
         todayCoreTotal={todayCoreTotal}
         todayAccessoriesTotal={todayAccessoriesTotal}
         dailyTarget={round2(dailyTarget)}
+        soldItemsToday={soldItemsToday}
+        isAdmin={true}
       />
       <EndOfDay
         storeId={storeId}

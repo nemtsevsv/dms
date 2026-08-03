@@ -84,10 +84,14 @@ create table if not exists store_stock_movements (
 
 create or replace view store_inventory_current
 with (security_invoker = true) as
-select store_id, sku, max(product_name) as product_name,
-       sum(case when type = 'sale' then -quantity else quantity end) as quantity
-from store_stock_movements
-group by store_id, sku;
+select
+  m.store_id,
+  m.sku,
+  coalesce(max(p.product_name), max(m.product_name), m.sku) as product_name,
+  sum(case when m.type = 'sale' then -m.quantity else m.quantity end) as quantity
+from store_stock_movements m
+left join products p on p.sku = m.sku
+group by m.store_id, m.sku;
 
 create table if not exists store_deliveries (
   id uuid primary key default uuid_generate_v4(),
