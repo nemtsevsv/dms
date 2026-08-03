@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { defaultSchedule } from "@/lib/storeSchedule";
+import { COMMON_TIMEZONES, DEFAULT_STORE_TIMEZONE } from "@/lib/storeTimezone";
 
 const CURRENCIES = ["EUR", "USD", "KZT", "AMD", "UZS", "KGS", "GEL", "AZN", "TJS", "TMT"];
 
@@ -18,6 +19,7 @@ export default function StoreForm({ store }: { store?: any }) {
     city: store?.city ?? "",
     address: store?.address ?? "",
     currency: store?.currency ?? "EUR",
+    timezone: store?.timezone ?? DEFAULT_STORE_TIMEZONE,
     status: store?.status ?? "Active",
   });
   const [fxRateText, setFxRateText] = useState(String(store?.fx_rate_to_eur ?? 1));
@@ -94,6 +96,16 @@ export default function StoreForm({ store }: { store?: any }) {
             onFocus={(e) => e.target.select()}
             onChange={(e) => setFxRateText(e.target.value)}
           />
+        </div>
+        <div>
+          <label className={labelCls}>Timezone (used to compute "today" for this store)</label>
+          <select className={inputCls} value={form.timezone} onChange={(e) => update("timezone", e.target.value)}>
+            {COMMON_TIMEZONES.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
         </div>
         {isEdit && (
           <div>

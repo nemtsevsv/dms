@@ -356,7 +356,9 @@ export default function SalesEntry({
                           ))}
                         </select>
                       ) : (
-                        <span className="truncate">{receipt.createdBy ?? "—"}</span>
+                        <span className="truncate">
+                          {staffOptions.find((s) => s.email === receipt.createdBy)?.displayName ?? receipt.createdBy ?? "—"}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

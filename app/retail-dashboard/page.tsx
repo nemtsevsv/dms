@@ -5,6 +5,7 @@ import { getStoreAccess } from "@/lib/storeAccess";
 import RetailDashboardClient from "./RetailDashboardClient";
 import { toDateStr, getWeekStart, getWeekEnd } from "@/lib/isoWeek";
 import { getFiscalYearRange } from "@/lib/fiscalYear";
+import { getStoreDateStr, DEFAULT_STORE_TIMEZONE } from "@/lib/storeTimezone";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function RetailDashboardPage() {
   const monthStart = `${todayStr.slice(0, 7)}-01`;
   const { start: fyStart } = getFiscalYearRange(now);
 
-  let storesQuery = supabase.from("stores").select("id, name, currency, fx_rate_to_eur").eq("status", "Active");
+  let storesQuery = supabase.from("stores").select("id, name, currency, fx_rate_to_eur, timezone").eq("status", "Active");
   if (access.isStoreStaff && access.storeId) {
     storesQuery = storesQuery.eq("id", access.storeId);
   }
@@ -32,6 +33,9 @@ export default async function RetailDashboardPage() {
   const metrics = await Promise.all(
     (stores ?? []).map(async (store) => {
       const fxRate = store.fx_rate_to_eur || 1;
+      const storeTimezone = store.timezone || DEFAULT_STORE_TIMEZONE;
+      const storeTodayStr = getStoreDateStr(storeTimezone);
+      const storeTodayWeekday = new Date(storeTodayStr).getUTCDay(); // date-only string parses as UTC midnight
 
       const [
         { data: trafficThisWeek },
@@ -42,6 +46,8 @@ export default async function RetailDashboardPage() {
         { data: yearReceipts },
         { data: yearTraffic },
         { data: reportToday },
+        { data: todaySchedule },
+        { data: staffForStore },
       ] = await Promise.all([
         supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", store.id).gte("occurred_at", `${weekStartStr}T00:00:00Z`).lte("occurred_at", `${weekEndStr}T23:59:59Z`),
         supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", store.id).gte("occurred_at", `${weekStartStr}T00:00:00Z`).lte("occurred_at", `${weekEndStr}T23:59:59Z`),
@@ -50,8 +56,14 @@ export default async function RetailDashboardPage() {
         supabase.from("store_sales_plan").select("year, month, plan_amount_local").eq("store_id", store.id),
         supabase.from("store_receipts").select("occurred_at, store_receipt_items(total)").eq("store_id", store.id).gte("occurred_at", toDateStr(fyStart) + "T00:00:00Z"),
         supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", store.id).eq("event_type", "visitor").gte("occurred_at", toDateStr(fyStart) + "T00:00:00Z"),
-        supabase.from("daily_reports").select("id").eq("store_id", store.id).eq("report_date", todayStr).maybeSingle(),
+        supabase.from("daily_reports").select("id").eq("store_id", store.id).eq("report_date", storeTodayStr).maybeSingle(),
+        supabase.from("store_schedule").select("is_open").eq("store_id", store.id).eq("day_of_week", storeTodayWeekday).maybeSingle(),
+        supabase.from("store_users").select("email, display_name").eq("store_id", store.id),
       ]);
+
+      // A store that isn't even scheduled to be open today can't be
+      // "missing" a report for it.
+      const isScheduledToday = todaySchedule?.is_open ?? true;
 
       // Weekly KPIs
       const visitorsThisWeek = (trafficThisWeek ?? []).filter((t) => t.event_type === "visitor").length;
@@ -133,7 +145,7 @@ export default async function RetailDashboardPage() {
         conversionPct,
         monthSalesEur,
         achievementPct,
-        hasReportToday: !!reportToday,
+        hasReportToday: !isScheduledToday || !!reportToday,
         funnel: { visitors: visitorsThisMonth, testDrives: testDrivesThisMonth, receipts: receiptsThisMonthCount },
         monthlyChart,
         weeklyChart,
@@ -145,13 +157,17 @@ export default async function RetailDashboardPage() {
   // Top sellers this month, computed separately to keep the block above readable
   const metricsWithSellers = await Promise.all(
     metrics.map(async (m) => {
-      const { data: monthReceipts } = await supabase
-        .from("store_receipts")
-        .select("created_by, store_receipt_items(total)")
-        .eq("store_id", m.id)
-        .gte("occurred_at", `${monthStart}T00:00:00Z`);
+      const [{ data: monthReceipts }, { data: staffForStore }] = await Promise.all([
+        supabase
+          .from("store_receipts")
+          .select("created_by, store_receipt_items(total)")
+          .eq("store_id", m.id)
+          .gte("occurred_at", `${monthStart}T00:00:00Z`),
+        supabase.from("store_users").select("email, display_name").eq("store_id", m.id),
+      ]);
       const store = (stores ?? []).find((s) => s.id === m.id);
       const fxRate = store?.fx_rate_to_eur || 1;
+      const nameByEmail = new Map((staffForStore ?? []).map((s) => [s.email, s.display_name || s.email]));
       const sellerTotals = new Map<string, number>();
       for (const r of monthReceipts ?? []) {
         const seller = (r as any).created_by ?? "Unknown";
@@ -159,7 +175,7 @@ export default async function RetailDashboardPage() {
         sellerTotals.set(seller, (sellerTotals.get(seller) ?? 0) + sum);
       }
       const topSellers = Array.from(sellerTotals.entries())
-        .map(([email, totalLocal]) => ({ email, totalEur: totalLocal / fxRate }))
+        .map(([email, totalLocal]) => ({ email: nameByEmail.get(email) ?? email, totalEur: totalLocal / fxRate }))
         .sort((a, b) => b.totalEur - a.totalEur)
         .slice(0, 5);
       return { ...m, topSellers };

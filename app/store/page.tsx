@@ -12,6 +12,7 @@ import StoreInventoryTable from "@/components/StoreInventoryTable";
 import StoreDailyReportsHistory from "@/components/StoreDailyReportsHistory";
 import { hoursForDate, openDaysInMonth, getHourSlotsForDate } from "@/lib/storeSchedule";
 import { getWeekStart, getWeekEnd, toDateStr } from "@/lib/isoWeek";
+import { getStoreDateStr, getStoreDate, DEFAULT_STORE_TIMEZONE } from "@/lib/storeTimezone";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +26,26 @@ export default async function StoreHomePage() {
 
   const supabase = createClient();
   const storeId = access.storeId;
-  const today = new Date();
-  const todayStr = toDateStr(today);
+
+  // "Today" must be computed in the STORE'S OWN local time, not the
+  // server's — otherwise, for a few hours after local midnight, the app
+  // would still be showing yesterday's report.
+  const { data: storeRow } = await supabase.from("stores").select("*").eq("id", storeId).single();
+  const timezone = storeRow?.timezone || DEFAULT_STORE_TIMEZONE;
+  const todayStr = getStoreDateStr(timezone);
+  const today = getStoreDate(timezone);
   const weekStart = getWeekStart(today);
   const weekEnd = getWeekEnd(today);
+
+  // A report from a previous day that was never explicitly closed gets
+  // closed automatically the moment we notice we've moved on — the
+  // employee shouldn't have to remember to press the button every night.
+  await supabase
+    .from("daily_reports")
+    .update({ closed_at: new Date().toISOString(), closed_by: "auto-closed" })
+    .eq("store_id", storeId)
+    .lt("report_date", todayStr)
+    .is("closed_at", null);
 
   const [
     { data: store },
@@ -46,7 +63,7 @@ export default async function StoreHomePage() {
     { data: myStaffRow },
     { data: allStaff },
   ] = await Promise.all([
-    supabase.from("stores").select("*").eq("id", storeId).single(),
+    Promise.resolve({ data: storeRow }),
     supabase.from("store_schedule").select("*").eq("store_id", storeId),
     supabase.from("store_sales_plan").select("year, month, plan_amount_local").eq("store_id", storeId),
     supabase.from("daily_reports").select("*").eq("store_id", storeId).eq("report_date", todayStr).maybeSingle(),
@@ -155,10 +172,12 @@ export default async function StoreHomePage() {
     visitorsByDate.set(d, (visitorsByDate.get(d) ?? 0) + 1);
   }
   const salesByDate = new Map<string, number>();
+  const receiptsByDate = new Map<string, number>();
   for (const r of allReceipts ?? []) {
     const d = r.occurred_at.slice(0, 10);
     const sum = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
     salesByDate.set(d, (salesByDate.get(d) ?? 0) + sum);
+    receiptsByDate.set(d, (receiptsByDate.get(d) ?? 0) + 1);
   }
   const historyRows = (reportsHistory ?? []).map((r) => {
     const sales = salesByDate.get(r.report_date) ?? 0;
@@ -166,6 +185,7 @@ export default async function StoreHomePage() {
       date: r.report_date,
       staffCount: r.staff_count,
       visitors: visitorsByDate.get(r.report_date) ?? 0,
+      receipts: receiptsByDate.get(r.report_date) ?? 0,
       salesTotal: sales,
       achievementPct: dailyTarget > 0 ? Math.round((sales / dailyTarget) * 100) : 0,
       selfEvaluation: r.self_evaluation,

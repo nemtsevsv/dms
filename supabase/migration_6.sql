@@ -19,6 +19,7 @@ create table if not exists stores (
   fx_rate_to_eur numeric not null default 1, -- 1 unit of local currency = fx_rate_to_eur EUR
   fx_rate_updated_at timestamptz,
   status text default 'Active', -- Active / Inactive
+  timezone text default 'Asia/Almaty', -- IANA zone, used to compute the store's own "today"
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

@@ -69,10 +69,12 @@ export default async function StoreCardPage({ params }: { params: { id: string }
     visitorsByDate.set(d, (visitorsByDate.get(d) ?? 0) + 1);
   }
   const salesByDate = new Map<string, number>();
+  const receiptsByDate = new Map<string, number>();
   for (const r of receipts ?? []) {
     const d = r.occurred_at.slice(0, 10);
     const sum = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
     salesByDate.set(d, (salesByDate.get(d) ?? 0) + sum);
+    receiptsByDate.set(d, (receiptsByDate.get(d) ?? 0) + 1);
   }
   const planMap = new Map((plans ?? []).map((p) => [`${p.year}-${p.month}`, p.plan_amount_local]));
 
@@ -86,6 +88,7 @@ export default async function StoreCardPage({ params }: { params: { id: string }
       date: r.report_date,
       staffCount: r.staff_count,
       visitors: visitorsByDate.get(r.report_date) ?? 0,
+      receipts: receiptsByDate.get(r.report_date) ?? 0,
       salesTotal,
       achievementPct: dailyTarget > 0 ? Math.round((salesTotal / dailyTarget) * 100) : 0,
       selfEvaluation: r.self_evaluation,
