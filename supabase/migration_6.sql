@@ -173,18 +173,24 @@ create table if not exists store_receipt_items (
 -- exactly as before this migration — no bootstrapping step needed
 -- for existing admin/manager logins.
 -- ------------------------------------------------------------
+-- SECURITY DEFINER is essential here: these functions are called from
+-- inside RLS policies on store_users itself. Without SECURITY DEFINER,
+-- their internal query against store_users would be subject to that same
+-- table's RLS policy (which calls these functions) — a circular check
+-- that produces inconsistent results. Running as the function owner
+-- bypasses RLS for this one lookup and breaks the cycle cleanly.
 create or replace function is_store_staff() returns boolean
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   select exists (select 1 from store_users su where su.email = auth.jwt() ->> 'email');
 $$;
 
 create or replace function my_store_id() returns uuid
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   select store_id from store_users where email = auth.jwt() ->> 'email' limit 1;
 $$;
 
 create or replace function my_store_role() returns text
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   select role from store_users where email = auth.jwt() ->> 'email' limit 1;
 $$;
 
