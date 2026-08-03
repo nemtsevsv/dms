@@ -161,6 +161,7 @@ export default async function StoreCardPage({ params }: { params: { id: string }
                     schedule={schedule ?? []}
                     plans={plans ?? []}
                     products={priceList}
+                    staffOptions={(staff ?? []).map((s: any) => ({ email: s.email, displayName: s.display_name || s.email }))}
                   />
                 </div>
                 <div className="hidden md:block">

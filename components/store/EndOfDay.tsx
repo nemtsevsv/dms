@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ProgressBar from "./ProgressBar";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
+import { format } from "date-fns";
+
+const SLIDER_GRADIENT = "linear-gradient(to right, #ef4444, #f97316, #eab308, #84cc16, #22c55e)";
 
 export default function EndOfDay({
   storeId,
@@ -18,6 +21,8 @@ export default function EndOfDay({
   salesTotal,
   callsThisWeekPct,
   testDrivesThisWeekPct,
+  closedAt,
+  closedBy,
   onChange,
 }: {
   storeId: string;
@@ -31,13 +36,17 @@ export default function EndOfDay({
   salesTotal: number;
   callsThisWeekPct: number;
   testDrivesThisWeekPct: number;
+  closedAt: string | null;
+  closedBy: string | null;
   onChange?: () => void;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [value, setValue] = useState(existingSelfEval ?? 3);
+  const [answered, setAnswered] = useState(existingSelfEval !== null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const conversionPct = visitors > 0 ? (receipts / visitors) * 100 : 0;
   const newVisitorRatePct = visitors > 0 ? (newVisitors / visitors) * 100 : 0;
@@ -46,6 +55,7 @@ export default function EndOfDay({
 
   async function save(newValue: number) {
     setValue(newValue);
+    setAnswered(true);
     setSaving(true);
     await supabase.from("daily_reports").update({ self_evaluation: newValue }).eq("store_id", storeId).eq("report_date", reportDate);
     setSaving(false);
@@ -53,6 +63,22 @@ export default function EndOfDay({
     router.refresh();
     onChange?.();
     setTimeout(() => setSaved(false), 1500);
+  }
+
+  async function closeDay() {
+    if (!answered) return;
+    setClosing(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase
+      .from("daily_reports")
+      .update({ closed_at: new Date().toISOString(), closed_by: user?.email ?? null })
+      .eq("store_id", storeId)
+      .eq("report_date", reportDate);
+    setClosing(false);
+    router.refresh();
+    onChange?.();
   }
 
   return (
@@ -80,7 +106,12 @@ export default function EndOfDay({
       </div>
 
       <div>
-        <div className="text-sm font-medium text-slate-700 mb-2">Self evaluation</div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-slate-700">
+            Self evaluation <span className="text-red-500">*</span>
+          </span>
+          {!answered && <span className="text-xs text-amber-600">Required before closing the day</span>}
+        </div>
         <input
           type="range"
           min={1}
@@ -88,7 +119,8 @@ export default function EndOfDay({
           step={1}
           value={value}
           onChange={(e) => save(Number(e.target.value))}
-          className="w-full"
+          className="w-full h-2 rounded-full appearance-none cursor-pointer"
+          style={{ background: SLIDER_GRADIENT }}
         />
         <div className="flex justify-between text-xs text-slate-400 mt-1">
           <span>1</span>
@@ -101,6 +133,24 @@ export default function EndOfDay({
           <span className="flex items-center gap-1 text-xs text-emerald-600 mt-1">
             <Check size={12} /> Saved
           </span>
+        )}
+      </div>
+
+      <div className="pt-2 border-t border-slate-100">
+        {closedAt ? (
+          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2.5">
+            <Lock size={14} />
+            Report closed {format(new Date(closedAt), "dd.MM.yyyy HH:mm")} by {closedBy ?? "—"}
+          </div>
+        ) : (
+          <button
+            onClick={closeDay}
+            disabled={!answered || closing}
+            title={!answered ? "Set your self evaluation first" : undefined}
+            className="w-full py-3 md:py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-40"
+          >
+            {closing ? "Closing..." : "Close the day"}
+          </button>
         )}
       </div>
     </div>

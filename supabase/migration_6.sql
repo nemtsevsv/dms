@@ -126,6 +126,11 @@ create table if not exists daily_reports (
   supply_pipeline int, -- 1-5
   self_evaluation int, -- 1-5
   submitted_by text,
+  manual_receipts int, -- admin-only override of the auto-computed receipts count
+  manual_sales_core numeric, -- admin-only override of core-item sales
+  manual_sales_accessories numeric, -- admin-only override of accessory sales
+  closed_at timestamptz, -- when "Close the day" was pressed
+  closed_by text,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   unique (store_id, report_date)

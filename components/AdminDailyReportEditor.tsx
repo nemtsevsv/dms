@@ -24,6 +24,7 @@ export default function AdminDailyReportEditor({
   schedule,
   plans,
   products,
+  staffOptions,
 }: {
   storeId: string;
   currency: string;
@@ -31,6 +32,7 @@ export default function AdminDailyReportEditor({
   schedule: ScheduleRow[];
   plans: PlanRow[];
   products: Product[];
+  staffOptions: { email: string; displayName: string }[];
 }) {
   const supabase = createClient();
   const [dateStr, setDateStr] = useState(toDateStr(new Date()));
@@ -118,18 +120,27 @@ export default function AdminDailyReportEditor({
   const monthSalesTotal = monthReceipts.reduce((s: number, r: any) => s + (r.store_receipt_items ?? []).reduce((s2: number, it: any) => s2 + (Number(it.total) || 0), 0), 0);
   const monthAchievementPct = thisMonthPlan > 0 ? (monthSalesTotal / thisMonthPlan) * 100 : 0;
 
-  const soldItemsToday = receipts.flatMap((r: any) =>
-    (r.store_receipt_items ?? []).map((it: any) => ({
+  const soldReceiptsToday = receipts.map((r: any) => ({
+    receiptId: r.id,
+    createdBy: r.created_by,
+    items: (r.store_receipt_items ?? []).map((it: any) => ({
       itemId: it.id,
-      createdBy: r.created_by,
       sku: it.sku,
       productName: it.product_name,
       quantity: it.quantity,
       unitPrice: it.unit_price,
       total: it.total,
       itemType: it.item_type,
-    }))
-  );
+    })),
+  }));
+
+  // If the admin manually corrected today's Core/Accessories, downstream
+  // Performance metrics should reflect that corrected figure.
+  const effectiveReceiptsCount = report?.manual_receipts ?? receipts.length;
+  const effectiveCore = report?.manual_sales_core ?? todayCoreTotal;
+  const effectiveAccessories = report?.manual_sales_accessories ?? todayAccessoriesTotal;
+  const effectiveSalesTotal = effectiveCore + effectiveAccessories;
+  const effectiveAchievementPct = dailyTarget > 0 ? (effectiveSalesTotal / dailyTarget) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -168,7 +179,11 @@ export default function AdminDailyReportEditor({
         todayCoreTotal={todayCoreTotal}
         todayAccessoriesTotal={todayAccessoriesTotal}
         dailyTarget={round2(dailyTarget)}
-        soldItemsToday={soldItemsToday}
+        soldReceiptsToday={soldReceiptsToday}
+        staffOptions={staffOptions}
+        manualReceipts={report?.manual_receipts ?? null}
+        manualSalesCore={report?.manual_sales_core ?? null}
+        manualSalesAccessories={report?.manual_sales_accessories ?? null}
         isAdmin={true}
         onChange={reload}
       />
@@ -176,14 +191,16 @@ export default function AdminDailyReportEditor({
         storeId={storeId}
         reportDate={dateStr}
         existingSelfEval={report?.self_evaluation ?? null}
-        dailyAchievementPct={dailyAchievementPct}
+        dailyAchievementPct={effectiveAchievementPct}
         monthAchievementPct={monthAchievementPct}
         visitors={visitorsToday}
         newVisitors={newVisitors}
-        receipts={receipts.length}
-        salesTotal={todaySalesTotal}
+        receipts={effectiveReceiptsCount}
+        salesTotal={effectiveSalesTotal}
         callsThisWeekPct={(callsThisWeek / 35) * 100}
         testDrivesThisWeekPct={(testDrivesThisWeek / 10) * 100}
+        closedAt={report?.closed_at ?? null}
+        closedBy={report?.closed_by ?? null}
         onChange={reload}
       />
     </div>

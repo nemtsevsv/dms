@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil, Check } from "lucide-react";
+import { format } from "date-fns";
 
 export default function OrderDateEdit({ orderId, orderDate }: { orderId: string; orderDate: string }) {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function OrderDateEdit({ orderId, orderDate }: { orderId: string;
   if (!editing) {
     return (
       <button onClick={() => setEditing(true)} className="inline-flex items-center gap-1 group">
-        {orderDate}
+        {format(new Date(orderDate), "dd.MM.yyyy")}
         <Pencil size={11} className="text-slate-300 group-hover:text-slate-500" />
       </button>
     );

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import { exportToXlsx } from "@/lib/exportXlsx";
+import { format } from "date-fns";
 import { btnExport } from "@/lib/buttonStyles";
 import { Download } from "lucide-react";
 
@@ -112,7 +113,7 @@ export default function SalesReport({ orders, invoices }: { orders: OrderRow[]; 
             {filteredOrders.map((o) => (
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="px-4 py-3">{o.order_number}</td>
-                <td className="px-4 py-3 text-slate-500">{o.order_date}</td>
+                <td className="px-4 py-3 text-slate-500">{format(new Date(o.order_date), "dd.MM.yyyy")}</td>
                 <td className="px-4 py-3">{o.dealer_name}</td>
                 <td className="px-4 py-3 text-slate-500">{o.country}</td>
                 <td className="px-4 py-3 text-slate-500">{o.manager}</td>
@@ -167,7 +168,7 @@ export default function SalesReport({ orders, invoices }: { orders: OrderRow[]; 
             {filteredInvoices.map((i) => (
               <tr key={i.id} className="border-t border-slate-100">
                 <td className="px-4 py-3">{i.invoice_number}</td>
-                <td className="px-4 py-3 text-slate-500">{i.invoice_date}</td>
+                <td className="px-4 py-3 text-slate-500">{format(new Date(i.invoice_date), "dd.MM.yyyy")}</td>
                 <td className="px-4 py-3">{i.dealer_name}</td>
                 <td className="px-4 py-3 text-slate-500">{i.country}</td>
                 <td className="px-4 py-3 text-slate-500">{i.manager}</td>

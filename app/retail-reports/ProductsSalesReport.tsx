@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { exportToXlsx } from "@/lib/exportXlsx";
 import { Download } from "lucide-react";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
+import { format } from "date-fns";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -123,7 +124,7 @@ export default function ProductsSalesReport({ bundle, storeIds }: { bundle: any;
           <tbody>
             {byDate.map(([date, v]) => (
               <tr key={date} className="border-t border-slate-100">
-                <td className="px-4 py-3 text-slate-500">{date}</td>
+                <td className="px-4 py-3 text-slate-500">{format(new Date(date), "dd.MM.yyyy")}</td>
                 <td className="px-4 py-3 text-right font-medium">{Math.round(v.total / rate).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-right">{Math.round(v.core / rate).toLocaleString("de-DE")}</td>
                 <td className="px-4 py-3 text-right">{Math.round(v.accessories / rate).toLocaleString("de-DE")}</td>

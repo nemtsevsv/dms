@@ -15,7 +15,7 @@ export default async function StoreShell({ storeId, wide, children }: { storeId:
           <img src="/logo-leica.png" alt="Leica" className="h-7 w-7 rounded-full shrink-0" />
           <div className="min-w-0">
             <div className="font-semibold text-sm truncate">{store?.name ?? "Store"}</div>
-            <div className="text-xs text-slate-400">{format(new Date(), "EEEE, dd MMMM yyyy")}</div>
+            <div className="text-xs text-slate-400">{format(new Date(), "dd.MM.yyyy")}</div>
           </div>
         </div>
         <StoreLogoutButton />

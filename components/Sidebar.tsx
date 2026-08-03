@@ -20,16 +20,29 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import UserProfileCard from "./UserProfileCard";
 
-const items = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
-  { href: "/retail-reports", label: "Retail Reports", icon: FileBarChart },
-  { href: "/dealers", label: "Dealers", icon: Building2 },
-  { href: "/stores", label: "Stores", icon: Store },
-  { href: "/products", label: "Products", icon: Package },
-  { href: "/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/tasks", label: "Tasks", icon: ListTodo },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
+const sections = [
+  {
+    label: "Dealers",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dealers", label: "Dealers", icon: Building2 },
+      { href: "/orders", label: "Orders", icon: ShoppingCart },
+      { href: "/tasks", label: "Tasks", icon: ListTodo },
+      { href: "/reports", label: "Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Retail",
+    items: [
+      { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
+      { href: "/stores", label: "Stores", icon: Store },
+      { href: "/retail-reports", label: "Retail Reports", icon: FileBarChart },
+    ],
+  },
+  {
+    label: "",
+    items: [{ href: "/products", label: "Products", icon: Package }],
+  },
 ];
 
 export default function Sidebar() {
@@ -46,26 +59,36 @@ export default function Sidebar() {
 
   const NavLinks = (
     <>
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {items.map((item) => {
-          const active = pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                active
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Icon size={16} />
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-4">
+        {sections.map((section, si) => (
+          <div key={si}>
+            {section.label && (
+              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</div>
+            )}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const active = pathname.startsWith(item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      active
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+            {si < sections.length - 1 && <div className="border-t border-slate-800 mt-4" />}
+          </div>
+        ))}
       </nav>
       <UserProfileCard onNavigate={() => setOpen(false)} />
       <div className="px-3 py-4 border-t border-slate-800">

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import PrintButton from "@/components/PrintButton";
+import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
           </p>
           <p>
             <span className="text-slate-500">Date: </span>
-            {invoice.invoice_date}
+            {format(new Date(invoice.invoice_date), "dd.MM.yyyy")}
           </p>
           {invoice.orders?.order_number && (
             <p>

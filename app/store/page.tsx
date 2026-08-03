@@ -44,6 +44,7 @@ export default async function StoreHomePage() {
     { data: stock },
     { data: reportsHistory },
     { data: myStaffRow },
+    { data: allStaff },
   ] = await Promise.all([
     supabase.from("stores").select("*").eq("id", storeId).single(),
     supabase.from("store_schedule").select("*").eq("store_id", storeId),
@@ -58,6 +59,7 @@ export default async function StoreHomePage() {
     supabase.from("store_inventory_current").select("*").eq("store_id", storeId),
     supabase.from("daily_reports").select("*").eq("store_id", storeId).order("report_date", { ascending: false }).limit(31),
     supabase.from("store_users").select("display_name, email").eq("store_id", storeId).eq("email", access.email).maybeSingle(),
+    supabase.from("store_users").select("display_name, email").eq("store_id", storeId).order("display_name"),
   ]);
 
   const fxRate = store?.fx_rate_to_eur ?? 1;
@@ -117,6 +119,15 @@ export default async function StoreHomePage() {
   );
   const dailyAchievementPct = dailyTarget > 0 ? (todaySalesTotal / dailyTarget) * 100 : 0;
 
+  // If the admin manually corrected today's Core/Accessories, Performance
+  // metrics (Target Achievement, Avg Receipt, ...) should reflect that
+  // corrected figure, not the raw itemized total.
+  const effectiveReceiptsCount = reportToday?.manual_receipts ?? (receiptsToday ?? []).length;
+  const effectiveCore = reportToday?.manual_sales_core ?? todayCoreTotal;
+  const effectiveAccessories = reportToday?.manual_sales_accessories ?? todayAccessoriesTotal;
+  const effectiveSalesTotal = effectiveCore + effectiveAccessories;
+  const effectiveAchievementPct = dailyTarget > 0 ? (effectiveSalesTotal / dailyTarget) * 100 : 0;
+
   // Month-to-date achievement
   const monthReports = (reportsHistory ?? []).filter((r) => r.report_date.slice(0, 7) === todayStr.slice(0, 7));
   const monthDates = monthReports.map((r) => r.report_date);
@@ -161,18 +172,21 @@ export default async function StoreHomePage() {
     };
   });
 
-  const soldItemsToday = (receiptsToday ?? []).flatMap((r: any) =>
-    (r.store_receipt_items ?? []).map((it: any) => ({
+  const soldReceiptsToday = (receiptsToday ?? []).map((r: any) => ({
+    receiptId: r.id,
+    createdBy: r.created_by,
+    items: (r.store_receipt_items ?? []).map((it: any) => ({
       itemId: it.id,
-      createdBy: r.created_by,
       sku: it.sku,
       productName: it.product_name,
       quantity: it.quantity,
       unitPrice: it.unit_price,
       total: it.total,
       itemType: it.item_type,
-    }))
-  );
+    })),
+  }));
+
+  const staffOptions = (allStaff ?? []).map((s) => ({ email: s.email, displayName: s.display_name || s.email }));
 
   const employeeName = myStaffRow?.display_name || access.email;
 
@@ -212,21 +226,27 @@ export default async function StoreHomePage() {
                   todayCoreTotal={todayCoreTotal}
                   todayAccessoriesTotal={todayAccessoriesTotal}
                   dailyTarget={round2(dailyTarget)}
-                  soldItemsToday={soldItemsToday}
+                  soldReceiptsToday={soldReceiptsToday}
+                  staffOptions={staffOptions}
+                  manualReceipts={reportToday?.manual_receipts ?? null}
+                  manualSalesCore={reportToday?.manual_sales_core ?? null}
+                  manualSalesAccessories={reportToday?.manual_sales_accessories ?? null}
                   isAdmin={false}
                 />
                 <EndOfDay
                   storeId={storeId}
                   reportDate={todayStr}
                   existingSelfEval={reportToday?.self_evaluation ?? null}
-                  dailyAchievementPct={dailyAchievementPct}
+                  dailyAchievementPct={effectiveAchievementPct}
                   monthAchievementPct={monthAchievementPct}
                   visitors={visitorsToday}
                   newVisitors={newVisitorsToday}
-                  receipts={(receiptsToday ?? []).length}
-                  salesTotal={todaySalesTotal}
+                  receipts={effectiveReceiptsCount}
+                  salesTotal={effectiveSalesTotal}
                   callsThisWeekPct={(callsThisWeek / 35) * 100}
                   testDrivesThisWeekPct={(testDrivesThisWeek / 10) * 100}
+                  closedAt={reportToday?.closed_at ?? null}
+                  closedBy={reportToday?.closed_by ?? null}
                 />
               </div>
             ),

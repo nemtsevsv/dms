@@ -1,6 +1,7 @@
 import Link from "next/link";
 import KpiCard from "./KpiCard";
 import { formatThousandsRoundUp } from "@/lib/formatK";
+import { format } from "date-fns";
 
 type Order = {
   id: string;
@@ -63,7 +64,7 @@ export default function DealerOrdersTab({
                     {o.order_number}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{o.order_date}</td>
+                <td className="px-4 py-3 text-slate-500">{format(new Date(o.order_date), "dd.MM.yyyy")}</td>
                 <td className="px-4 py-3 text-slate-500">{o.author}</td>
                 <td className="px-4 py-3 text-slate-500">{o.status}</td>
                 <td className="px-4 py-3 text-right">

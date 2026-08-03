@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ColumnFilterHeader from "./ColumnFilterHeader";
+import { format } from "date-fns";
 import { btnPrimary } from "@/lib/buttonStyles";
 
 type Order = {
@@ -125,7 +126,7 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
                   </Link>
                 </td>
                 <td className="px-4 py-3">{o.dealers?.company_name ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-500">{o.order_date}</td>
+                <td className="px-4 py-3 text-slate-500">{format(new Date(o.order_date), "dd.MM.yyyy")}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[o.status] ?? "bg-slate-100 text-slate-600"}`}>
                     {o.status}
