@@ -52,20 +52,22 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <label className="text-sm text-slate-500">Store:</label>
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
-        >
-          {stores.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {stores.length > 1 && (
+        <div className="flex items-center gap-3 mb-6">
+          <label className="text-sm text-slate-500">Store:</label>
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          >
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -99,8 +101,8 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
           <RetailFunnel visitors={selected.funnel.visitors} testDrives={selected.funnel.testDrives} receipts={selected.funnel.receipts} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {top && (
+        <div className={`grid grid-cols-1 ${stores.length > 1 ? "md:grid-cols-3" : ""} gap-4`}>
+          {stores.length > 1 && top && (
             <div className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
               <div className="text-xs font-medium text-slate-500 mb-1">🏆 Top Store</div>
               <div className="font-semibold">{top.name}</div>

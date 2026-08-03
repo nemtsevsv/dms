@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   BarChart3,
   TrendingUp,
+  FileBarChart,
   LogOut,
   Menu,
   X,
@@ -22,6 +23,7 @@ import UserProfileCard from "./UserProfileCard";
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
+  { href: "/retail-reports", label: "Retail Reports", icon: FileBarChart },
   { href: "/dealers", label: "Dealers", icon: Building2 },
   { href: "/stores", label: "Stores", icon: Store },
   { href: "/products", label: "Products", icon: Package },

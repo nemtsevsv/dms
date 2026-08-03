@@ -4,7 +4,6 @@ import DealerTabs from "@/components/DealerTabs";
 import SalesReport from "./SalesReport";
 import DealerNetworkReport from "./DealerNetworkReport";
 import DealerRatings from "./DealerRatings";
-import RetailPerformanceReport from "./RetailPerformanceReport";
 import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { buildAuthorNameMap, resolveAuthor } from "@/lib/userNames";
 import { getFiscalQuarterBounds, getCurrentFiscalYearBounds } from "@/lib/fiscalYear";
@@ -172,35 +171,6 @@ export default async function ReportsPage() {
     return { status, thresholdDays, dealers: stuck };
   });
 
-  // ---- Retail Performance (Own Stores) ----
-  const { data: stores } = await supabase.from("stores").select("id, name, country, currency").eq("status", "Active");
-  const { data: storePlans } = await supabase.from("store_sales_plan").select("store_id, year, month, plan_amount_local");
-  const { data: storeReceipts } = await supabase.from("store_receipts").select("store_id, occurred_at, store_receipt_items(total)");
-  const thisY = now.getFullYear();
-  const thisM = now.getMonth() + 1;
-  const lastMonthDate = new Date(thisY, thisM - 2, 1);
-  const lastY = lastMonthDate.getFullYear();
-  const lastM = lastMonthDate.getMonth() + 1;
-
-  const salesByStoreMonth = new Map<string, number>();
-  for (const r of storeReceipts ?? []) {
-    const d = new Date(r.occurred_at);
-    const key = `${r.store_id}-${d.getFullYear()}-${d.getMonth() + 1}`;
-    const sum = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
-    salesByStoreMonth.set(key, (salesByStoreMonth.get(key) ?? 0) + sum);
-  }
-  const planByStoreMonth = new Map((storePlans ?? []).map((p) => [`${p.store_id}-${p.year}-${p.month}`, p.plan_amount_local]));
-
-  const storeRows = (stores ?? []).map((s) => ({
-    id: s.id,
-    name: s.name,
-    country: s.country ?? "—",
-    currency: s.currency,
-    planThisMonth: planByStoreMonth.get(`${s.id}-${thisY}-${thisM}`) ?? 0,
-    actualThisMonth: salesByStoreMonth.get(`${s.id}-${thisY}-${thisM}`) ?? 0,
-    actualLastMonth: salesByStoreMonth.get(`${s.id}-${lastY}-${lastM}`) ?? 0,
-  }));
-
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
@@ -237,11 +207,6 @@ export default async function ReportsPage() {
             key: "ratings",
             label: "Dealer Ratings",
             content: <DealerRatings dealers={ratingDealers} />,
-          },
-          {
-            key: "retail",
-            label: "Retail Performance",
-            content: <RetailPerformanceReport stores={storeRows} />,
           },
         ]}
       />

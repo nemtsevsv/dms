@@ -43,12 +43,13 @@ export async function middleware(request: NextRequest) {
     if (isLoginPage) {
       return NextResponse.redirect(new URL(isStoreStaff ? "/store" : "/dashboard", request.url));
     }
-    // Store staff can only ever see the /store area — never the admin panel,
-    // even by typing a URL directly. Admin data is also protected by RLS,
-    // this just keeps the navigation experience clean.
-    // NOTE: must be an exact "/store" or "/store/..." match — "/stores/..."
-    // (the admin section) is a different route and must NOT match here.
-    const isStoreArea = path === "/store" || path.startsWith("/store/");
+    // Store staff can only ever see their own small set of pages — never the
+    // admin panel — even by typing a URL directly. Admin data is also
+    // protected by RLS, this just keeps the navigation experience clean.
+    // NOTE: must be an exact match or "/x/..." prefix — "/stores/..."
+    // (the admin section) must NOT match "/store".
+    const STORE_STAFF_AREAS = ["/store", "/retail-dashboard", "/retail-reports"];
+    const isStoreArea = STORE_STAFF_AREAS.some((base) => path === base || path.startsWith(base + "/"));
     if (isStoreStaff && !isStoreArea) {
       return NextResponse.redirect(new URL("/store", request.url));
     }

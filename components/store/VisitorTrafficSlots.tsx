@@ -7,6 +7,10 @@ import { Plus, Minus } from "lucide-react";
 
 type Slot = { startHour: number; label: string };
 
+// Shared with CustomerActivities so the New / Existing columns line up
+// visually between the two cards.
+const GRID = "grid grid-cols-[52px_1fr_1fr] items-center gap-2";
+
 export default function VisitorTrafficSlots({
   storeId,
   reportDate,
@@ -76,27 +80,29 @@ export default function VisitorTrafficSlots({
     refresh();
   }
 
-  function Cell({ startHour, ct }: { startHour: number; ct: "new" | "existing" }) {
+  function Stepper({ startHour, ct }: { startHour: number; ct: "new" | "existing" }) {
     const key = `${startHour}-${ct}`;
     const count = slotCounts[key] ?? 0;
     return (
-      <div className="flex items-center justify-center gap-1">
+      <div className="flex items-center justify-center gap-2">
         <button
           onClick={() => undo(startHour, ct)}
           disabled={pending === `undo-${key}` || count === 0}
           aria-label={`-1 ${ct} for ${startHour}:00`}
-          className="w-5 h-5 flex items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30"
+          className="w-10 h-10 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500 active:bg-red-100 disabled:opacity-30"
         >
-          <Minus size={10} />
+          <Minus size={16} className="md:hidden" />
+          <Minus size={12} className="hidden md:block" />
         </button>
-        <span className="w-4 text-center text-sm font-medium tabular-nums">{count}</span>
+        <span className="w-5 text-center text-base md:text-sm font-semibold tabular-nums">{count}</span>
         <button
           onClick={() => tap(startHour, ct)}
           disabled={pending === key}
           aria-label={`+1 ${ct} for ${startHour}:00`}
-          className="w-5 h-5 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+          className="w-10 h-10 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 active:bg-emerald-100 disabled:opacity-50"
         >
-          <Plus size={10} />
+          <Plus size={16} className="md:hidden" />
+          <Plus size={12} className="hidden md:block" />
         </button>
       </div>
     );
@@ -114,33 +120,27 @@ export default function VisitorTrafficSlots({
       {slots.length === 0 ? (
         <p className="text-sm text-slate-400">No opening hours set for today — set the schedule first.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs text-slate-400">
-              <th className="text-left font-normal pb-1 w-14">Slot</th>
-              <th className="font-normal pb-1">New</th>
-              <th className="font-normal pb-1">Existing</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div>
+          <div className={`${GRID} text-xs text-slate-400 mb-1`}>
+            <span></span>
+            <span className="text-center">New</span>
+            <span className="text-center">Existing</span>
+          </div>
+          <div className="space-y-1">
             {slots.map((slot) => (
-              <tr key={slot.startHour} className="border-t border-slate-50">
-                <td className="py-1 text-xs text-slate-400">{slot.label}</td>
-                <td className="py-1">
-                  <Cell startHour={slot.startHour} ct="new" />
-                </td>
-                <td className="py-1">
-                  <Cell startHour={slot.startHour} ct="existing" />
-                </td>
-              </tr>
+              <div key={slot.startHour} className={`${GRID} py-1 border-t border-slate-50`}>
+                <span className="text-xs text-slate-400">{slot.label}</span>
+                <Stepper startHour={slot.startHour} ct="new" />
+                <Stepper startHour={slot.startHour} ct="existing" />
+              </div>
             ))}
-            <tr className="border-t border-slate-200 font-medium">
-              <td className="py-1.5 text-xs text-slate-500">Total</td>
-              <td className="py-1.5 text-center">{totalNew}</td>
-              <td className="py-1.5 text-center">{totalExisting}</td>
-            </tr>
-          </tbody>
-        </table>
+            <div className={`${GRID} pt-2 border-t border-slate-200 font-medium`}>
+              <span className="text-xs text-slate-500">Total</span>
+              <span className="text-center">{totalNew}</span>
+              <span className="text-center">{totalExisting}</span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

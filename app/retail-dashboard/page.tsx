@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
+import StoreShell from "@/components/store/StoreShell";
+import { getStoreAccess } from "@/lib/storeAccess";
 import RetailDashboardClient from "./RetailDashboardClient";
 import { toDateStr, getWeekStart, getWeekEnd } from "@/lib/isoWeek";
 import { getFiscalYearRange } from "@/lib/fiscalYear";
@@ -10,6 +12,7 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default async function RetailDashboardPage() {
+  const access = await getStoreAccess();
   const supabase = createClient();
   const now = new Date();
   const todayStr = toDateStr(now);
@@ -20,7 +23,11 @@ export default async function RetailDashboardPage() {
   const monthStart = `${todayStr.slice(0, 7)}-01`;
   const { start: fyStart } = getFiscalYearRange(now);
 
-  const { data: stores } = await supabase.from("stores").select("id, name, currency, fx_rate_to_eur").eq("status", "Active");
+  let storesQuery = supabase.from("stores").select("id, name, currency, fx_rate_to_eur").eq("status", "Active");
+  if (access.isStoreStaff && access.storeId) {
+    storesQuery = storesQuery.eq("id", access.storeId);
+  }
+  const { data: stores } = await storesQuery;
 
   const metrics = await Promise.all(
     (stores ?? []).map(async (store) => {
@@ -159,10 +166,15 @@ export default async function RetailDashboardPage() {
     })
   );
 
-  return (
-    <AppShell>
+  const content = (
+    <>
       <h1 className="text-xl font-semibold mb-6">Retail Dashboard</h1>
       <RetailDashboardClient stores={metricsWithSellers} />
-    </AppShell>
+    </>
   );
+
+  if (access.isStoreStaff && access.storeId) {
+    return <StoreShell storeId={access.storeId}>{content}</StoreShell>;
+  }
+  return <AppShell>{content}</AppShell>;
 }
