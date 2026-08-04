@@ -9,5 +9,5 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     redirect("/dashboard");
   }
 
-  return <StoreShell storeId={access.storeId}>{children}</StoreShell>;
+  return <StoreShell storeId={access.storeId} email={access.email}>{children}</StoreShell>;
 }

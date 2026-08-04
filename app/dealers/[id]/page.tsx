@@ -24,33 +24,34 @@ export default async function DealerCardPage({ params }: { params: { id: string 
   const { data: dealer } = await supabase.from("dealers").select("*").eq("id", params.id).single();
   if (!dealer) notFound();
 
-  const { data: comments } = await supabase
-    .from("dealer_comments")
-    .select("*")
-    .eq("dealer_id", params.id)
-    .order("created_at", { ascending: false });
+  const { startStr, endStr, label: fyLabel } = getCurrentFiscalYearBounds();
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("dealer_id", params.id)
-    .order("due_date", { ascending: true, nullsFirst: false });
-
-  const { data: history } = await supabase
-    .from("dealer_history")
-    .select("*")
-    .eq("dealer_id", params.id)
-    .order("changed_at", { ascending: false });
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id, order_number, status, order_date, currency, created_by, order_items(id, sku, product_name, quantity, unit_price, total)")
-    .eq("dealer_id", params.id)
-    .order("order_date", { ascending: false });
-
-  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  // Everything below is independent of everything else at this point (none
+  // of these queries need each other's results), so they run in parallel —
+  // previously they ran one after another, adding up to several times the
+  // latency of a single round trip before the page could render at all.
+  const [{ data: comments }, { data: tasks }, { data: history }, { data: orders }, { data: profiles }, { data: paidItems }] = await Promise.all([
+    supabase.from("dealer_comments").select("*").eq("dealer_id", params.id).order("created_at", { ascending: false }),
+    supabase.from("tasks").select("*").eq("dealer_id", params.id).order("due_date", { ascending: true, nullsFirst: false }),
+    supabase.from("dealer_history").select("*").eq("dealer_id", params.id).order("changed_at", { ascending: false }),
+    supabase
+      .from("orders")
+      .select("id, order_number, status, order_date, currency, created_by, order_items(id, sku, product_name, quantity, unit_price, total)")
+      .eq("dealer_id", params.id)
+      .order("order_date", { ascending: false }),
+    supabase.from("profiles").select("email, first_name, last_name"),
+    supabase
+      .from("invoice_items")
+      .select("total, invoices!inner(dealer_id, status, invoice_date)")
+      .eq("invoices.dealer_id", params.id)
+      .eq("invoices.status", "Paid")
+      .gte("invoices.invoice_date", startStr)
+      .lte("invoices.invoice_date", endStr),
+  ]);
   const authorNames = buildAuthorNameMap(profiles ?? []);
 
+  // This one genuinely has to wait — it needs the order item ids from the
+  // orders query above.
   const allItemIds = (orders ?? []).flatMap((o: any) => o.order_items.map((i: any) => i.id));
   const invoicedQtyByItem: Record<string, number> = {};
   if (allItemIds.length > 0) {
@@ -64,15 +65,6 @@ export default async function DealerCardPage({ params }: { params: { id: string 
       invoicedQtyByItem[row.order_item_id] = (invoicedQtyByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
     }
   }
-
-  const { startStr, endStr, label: fyLabel } = getCurrentFiscalYearBounds();
-  const { data: paidItems } = await supabase
-    .from("invoice_items")
-    .select("total, invoices!inner(dealer_id, status, invoice_date)")
-    .eq("invoices.dealer_id", params.id)
-    .eq("invoices.status", "Paid")
-    .gte("invoices.invoice_date", startStr)
-    .lte("invoices.invoice_date", endStr);
 
   const invoicedPaidFY = (paidItems ?? []).reduce((s, it: any) => s + (Number(it.total) || 0), 0);
 

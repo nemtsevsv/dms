@@ -23,19 +23,19 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     .single();
   if (!invoice) notFound();
 
-  const { data: items } = await supabase.from("invoice_items").select("*").eq("invoice_id", params.id);
-  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const [{ data: items }, { data: profiles }, { data: orderItems }] = await Promise.all([
+    supabase.from("invoice_items").select("*").eq("invoice_id", params.id),
+    supabase.from("profiles").select("email, first_name, last_name"),
+    invoice.order_id
+      ? supabase.from("order_items").select("id, sku, product_name, quantity, unit_price").eq("order_id", invoice.order_id)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
   const authorNames = buildAuthorNameMap(profiles ?? []);
 
   // Items can only be added to an invoice if they already exist on the
   // linked order — first add to the order, then it becomes invoiceable.
   let orderItemsForPicker: { id: string; sku: string | null; product_name: string | null; unit_price: number | null; remaining: number }[] = [];
   if (invoice.order_id) {
-    const { data: orderItems } = await supabase
-      .from("order_items")
-      .select("id, sku, product_name, quantity, unit_price")
-      .eq("order_id", invoice.order_id);
-
     const orderItemIds = (orderItems ?? []).map((i) => i.id);
     const invoicedTotalByItem: Record<string, number> = {};
     if (orderItemIds.length > 0) {

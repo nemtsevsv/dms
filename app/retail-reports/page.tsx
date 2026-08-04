@@ -95,7 +95,7 @@ export default async function RetailReportsPage() {
 
   if (access.isStoreStaff && access.storeId) {
     return (
-      <StoreShell storeId={access.storeId} wide>
+      <StoreShell storeId={access.storeId} email={access.email} wide>
         {content}
       </StoreShell>
     );

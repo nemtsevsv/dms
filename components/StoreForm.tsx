@@ -98,7 +98,7 @@ export default function StoreForm({ store }: { store?: any }) {
           />
         </div>
         <div>
-          <label className={labelCls}>Timezone (used to compute "today" for this store)</label>
+          <label className={labelCls}>Timezone</label>
           <select className={inputCls} value={form.timezone} onChange={(e) => update("timezone", e.target.value)}>
             {COMMON_TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>

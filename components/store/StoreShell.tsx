@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { getStoreAccess } from "@/lib/storeAccess";
 import { getStoreDate } from "@/lib/storeTimezone";
 import StoreLogoutButton from "./StoreLogoutButton";
 import StoreTopNav from "./StoreTopNav";
@@ -11,23 +10,36 @@ const ROLE_LABELS: Record<string, string> = {
   store_manager: "Store Manager",
 };
 
-export default async function StoreShell({ storeId, wide, children }: { storeId: string; wide?: boolean; children: React.ReactNode }) {
+// `email` is passed in by the caller, which already resolved it via
+// getStoreAccess() to decide whether to render this shell in the first
+// place — re-fetching it here would be a second, unnecessary round trip
+// on every single page load.
+export default async function StoreShell({
+  storeId,
+  email,
+  wide,
+  children,
+}: {
+  storeId: string;
+  email: string | null;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   const supabase = createClient();
-  const access = await getStoreAccess();
   const [{ data: store }, { data: me }] = await Promise.all([
     supabase.from("stores").select("name, currency, timezone").eq("id", storeId).single(),
-    access.email ? supabase.from("store_users").select("display_name, role").eq("store_id", storeId).eq("email", access.email).maybeSingle() : Promise.resolve({ data: null }),
+    email ? supabase.from("store_users").select("display_name, role").eq("store_id", storeId).eq("email", email).maybeSingle() : Promise.resolve({ data: null }),
   ]);
 
   const todayLabel = format(getStoreDate(store?.timezone || "Asia/Almaty"), "dd.MM.yyyy");
-  const myDisplayName = me?.display_name || access.email || "";
+  const myDisplayName = me?.display_name || email || "";
   const myRoleLabel = me?.role ? ROLE_LABELS[me.role] ?? me.role : "";
 
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <img src="/logo-leica.png" alt="Leica" className="h-7 w-7 rounded-full shrink-0" />
+          <img src="/leica-badge.png" alt="Leica" className="h-7 w-7 rounded-full shrink-0" />
           <div className="min-w-0">
             <div className="font-semibold text-sm truncate">{store?.name ?? "Store"}</div>
             <div className="text-xs text-slate-400">{todayLabel}</div>

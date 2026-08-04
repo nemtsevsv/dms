@@ -190,7 +190,7 @@ export default async function RetailDashboardPage() {
   );
 
   if (access.isStoreStaff && access.storeId) {
-    return <StoreShell storeId={access.storeId}>{content}</StoreShell>;
+    return <StoreShell storeId={access.storeId} email={access.email}>{content}</StoreShell>;
   }
   return <AppShell>{content}</AppShell>;
 }

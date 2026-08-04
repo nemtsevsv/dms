@@ -17,11 +17,13 @@ export default async function OrderCardPage({ params }: { params: { id: string }
     .single();
   if (!order) notFound();
 
-  const { data: items } = await supabase
-    .from("order_items")
-    .select("*")
-    .eq("order_id", params.id)
-    .order("created_at");
+  const [{ data: items }, { data: products }, { data: invoices }, { data: profiles }] = await Promise.all([
+    supabase.from("order_items").select("*").eq("order_id", params.id).order("created_at"),
+    supabase.from("products").select("sku, product_name, list_price").order("product_name"),
+    supabase.from("invoices").select("id, invoice_number, invoice_date, status").eq("order_id", params.id).order("created_at", { ascending: false }),
+    supabase.from("profiles").select("email, first_name, last_name"),
+  ]);
+  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   const itemIds = (items ?? []).map((i) => i.id);
   const invoicedQtyByItem: Record<string, number> = {};
@@ -36,20 +38,6 @@ export default async function OrderCardPage({ params }: { params: { id: string }
       invoicedQtyByItem[row.order_item_id] = (invoicedQtyByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
     }
   }
-
-  const { data: products } = await supabase
-    .from("products")
-    .select("sku, product_name, list_price")
-    .order("product_name");
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("id, invoice_number, invoice_date, status")
-    .eq("order_id", params.id)
-    .order("created_at", { ascending: false });
-
-  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
-  const authorNames = buildAuthorNameMap(profiles ?? []);
 
   const dealerDiscount = order.dealers?.discount_percent ?? 0;
 

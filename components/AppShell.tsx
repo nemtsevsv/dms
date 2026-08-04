@@ -1,17 +1,11 @@
 import Sidebar from "./Sidebar";
-import { getStoreAccess } from "@/lib/storeAccess";
-import { redirect } from "next/navigation";
 
-export default async function AppShell({ children }: { children: React.ReactNode }) {
-  // Defense in depth: middleware already redirects store staff away from
-  // every admin route, but this guarantees the admin sidebar and its pages
-  // (including "New Store") can never render for a store-staff session,
-  // even in an edge case middleware doesn't catch.
-  const access = await getStoreAccess();
-  if (access.isStoreStaff) {
-    redirect("/store");
-  }
-
+// Access control for store staff is handled once, in middleware.ts, before
+// any page even starts rendering — that already reliably keeps them out of
+// every admin route (fixed in migration_9). Re-checking it again here used
+// to cost an extra database round trip on every single page navigation;
+// removed so navigating the admin panel feels instant again.
+export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       <Sidebar />

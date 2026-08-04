@@ -58,9 +58,14 @@ export default async function StoreCardPage({ params }: { params: { id: string }
   });
 
   // Daily report history with visitor/sales aggregates
-  const { data: reports } = await supabase.from("daily_reports").select("*").eq("store_id", params.id).order("report_date", { ascending: false }).limit(60);
-  const { data: traffic } = await supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", params.id);
-  const { data: receipts } = await supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", params.id);
+  const weekStart = getWeekStart();
+  const weekEnd = getWeekEnd();
+  const [{ data: reports }, { data: traffic }, { data: receipts }, { data: focus }] = await Promise.all([
+    supabase.from("daily_reports").select("*").eq("store_id", params.id).order("report_date", { ascending: false }).limit(60),
+    supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", params.id),
+    supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", params.id),
+    supabase.from("store_weekly_focus").select("*").eq("store_id", params.id).eq("week_start_date", toDateStr(weekStart)).maybeSingle(),
+  ]);
 
   const visitorsByDate = new Map<string, number>();
   for (const t of traffic ?? []) {
@@ -94,15 +99,6 @@ export default async function StoreCardPage({ params }: { params: { id: string }
       selfEvaluation: r.self_evaluation,
     };
   });
-
-  const weekStart = getWeekStart();
-  const weekEnd = getWeekEnd();
-  const { data: focus } = await supabase
-    .from("store_weekly_focus")
-    .select("*")
-    .eq("store_id", params.id)
-    .eq("week_start_date", toDateStr(weekStart))
-    .maybeSingle();
 
   return (
     <AppShell>

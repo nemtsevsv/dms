@@ -16,19 +16,26 @@ export default async function DashboardPage() {
   const { startStr, endStr, label } = getCurrentFiscalYearBounds();
   const { start: fyStart } = getFiscalYearRange();
 
-  const { data: dealers } = await supabase.from("dealers").select("*");
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*, dealers(company_name)")
-    .neq("status", "Completed")
-    .neq("status", "Cancelled")
-    .order("due_date", { ascending: true });
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id, status, order_date, order_items(id, quantity, total)")
-    .gte("order_date", startStr)
-    .lte("order_date", endStr);
+  const [{ data: dealers }, { data: tasks }, { data: orders }, { data: invoices }] = await Promise.all([
+    supabase.from("dealers").select("*"),
+    supabase
+      .from("tasks")
+      .select("*, dealers(company_name)")
+      .neq("status", "Completed")
+      .neq("status", "Cancelled")
+      .order("due_date", { ascending: true }),
+    supabase
+      .from("orders")
+      .select("id, status, order_date, order_items(id, quantity, total)")
+      .gte("order_date", startStr)
+      .lte("order_date", endStr),
+    supabase
+      .from("invoices")
+      .select("dealer_id, invoice_date, status, invoice_items(total)")
+      .neq("status", "Cancelled")
+      .gte("invoice_date", startStr)
+      .lte("invoice_date", endStr),
+  ]);
 
   const allItemIds = (orders ?? []).flatMap((o: any) => o.order_items.map((i: any) => i.id));
   const invoicedQtyByItem: Record<string, number> = {};
@@ -43,13 +50,6 @@ export default async function DashboardPage() {
       invoicedQtyByItem[row.order_item_id] = (invoicedQtyByItem[row.order_item_id] ?? 0) + (Number(row.quantity) || 0);
     }
   }
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("dealer_id, invoice_date, status, invoice_items(total)")
-    .neq("status", "Cancelled")
-    .gte("invoice_date", startStr)
-    .lte("invoice_date", endStr);
 
   const totalDealers = dealers?.length ?? 0;
   const totalPlan = dealers?.reduce((s, d) => s + (Number(d.annual_sales_plan) || 0), 0) ?? 0;
