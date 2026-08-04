@@ -10,6 +10,7 @@ import { buildCanonicalMap, canonicalValue } from "@/lib/normalizeText";
 import { exportToXlsx } from "@/lib/exportXlsx";
 import { btnPrimary, btnExport } from "@/lib/buttonStyles";
 import { Download } from "lucide-react";
+import { format } from "date-fns";
 
 type Dealer = {
   id: string;
@@ -21,13 +22,14 @@ type Dealer = {
   actual_sales: number;
   manager_name: string;
   product_categories: string[];
+  created_at: string;
 };
 
 function applyFilter(value: string, selected: string[]) {
   return selected.length === 0 || (selected.length === 1 && selected[0] === "__none__" ? false : selected.includes(value));
 }
 
-type SortKey = "company_name" | "status" | "manager" | "annual_sales_plan" | "actual_sales" | "achievement";
+type SortKey = "company_name" | "status" | "country" | "manager" | "annual_sales_plan" | "actual_sales" | "achievement" | "created_at";
 
 export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
   const [search, setSearch] = useState("");
@@ -67,12 +69,14 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
         if (sortKey === "achievement") return (achievementPct(a) - achievementPct(b)) * dir;
         if (sortKey === "status") return a.status.localeCompare(b.status) * dir;
         if (sortKey === "manager") return a.manager_name.localeCompare(b.manager_name) * dir;
+        if (sortKey === "country") return canonicalValue(a.country, countryMap).localeCompare(canonicalValue(b.country, countryMap)) * dir;
+        if (sortKey === "created_at") return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
         return a.company_name.localeCompare(b.company_name) * dir;
       });
   }, [dealers, search, statusFilter, countryFilter, managerFilter, categoryFilter, sortKey, sortDir]);
 
   function exportXlsx() {
-    const header = ["Company", "Status", "Country", "City", "Manager", "Annual Plan (EUR)", "Actual Sales (EUR)", "Target Achievement (%)"];
+    const header = ["Company", "Status", "Country", "City", "Manager", "Annual Plan (EUR)", "Actual Sales (EUR)", "Target Achievement (%)", "Created"];
     const rows = filtered.map((d) => [
       d.company_name,
       d.status,
@@ -82,6 +86,7 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
       d.annual_sales_plan ?? 0,
       d.actual_sales ?? 0,
       achievementPct(d),
+      format(new Date(d.created_at), "dd.MM.yyyy"),
     ]);
     exportToXlsx("dealers.xlsx", header, rows, "Dealers");
   }
@@ -130,7 +135,14 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
                 />
               </th>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="Country" options={countries} selected={countryFilter} onChange={setCountryFilter} />
+                <ColumnFilterHeader
+                  label="Country"
+                  options={countries}
+                  selected={countryFilter}
+                  onChange={setCountryFilter}
+                  sortDir={sortKey === "country" ? sortDir : null}
+                  onSort={(dir) => handleSort("country", dir)}
+                />
               </th>
               <th className="text-left px-3 py-2.5">City</th>
               <th className="text-left px-3 py-2.5">
@@ -176,6 +188,16 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
                   onSort={(dir) => handleSort("achievement", dir)}
                 />
               </th>
+              <th className="text-left px-3 py-2.5">
+                <ColumnFilterHeader
+                  label="Created"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  sortDir={sortKey === "created_at" ? sortDir : null}
+                  onSort={(dir) => handleSort("created_at", dir)}
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -199,11 +221,12 @@ export default function DealerTable({ dealers }: { dealers: Dealer[] }) {
                 <td className={`px-3 py-2 text-right font-semibold whitespace-nowrap ${achievementColorClass(achievementPct(d))}`}>
                   {achievementPct(d)}%
                 </td>
+                <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{format(new Date(d.created_at), "dd.MM.yyyy")}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-slate-400">
+                <td colSpan={9} className="text-center py-8 text-slate-400">
                   No dealers found
                 </td>
               </tr>

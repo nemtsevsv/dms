@@ -10,19 +10,19 @@ export default async function DealersPage() {
   const supabase = createClient();
   const { startStr, endStr, label } = getCurrentFiscalYearBounds();
 
-  const { data: dealers } = await supabase
-    .from("dealers")
-    .select("id, status, company_name, country, city, annual_sales_plan, assigned_manager, product_categories")
-    .order("company_name");
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("dealer_id, invoice_date, status, invoice_items(total)")
-    .neq("status", "Cancelled")
-    .gte("invoice_date", startStr)
-    .lte("invoice_date", endStr);
-
-  const { data: profiles } = await supabase.from("profiles").select("email, first_name, last_name");
+  const [{ data: dealers }, { data: invoices }, { data: profiles }] = await Promise.all([
+    supabase
+      .from("dealers")
+      .select("id, status, company_name, country, city, annual_sales_plan, assigned_manager, product_categories, created_at")
+      .order("company_name"),
+    supabase
+      .from("invoices")
+      .select("dealer_id, invoice_date, status, invoice_items(total)")
+      .neq("status", "Cancelled")
+      .gte("invoice_date", startStr)
+      .lte("invoice_date", endStr),
+    supabase.from("profiles").select("email, first_name, last_name"),
+  ]);
   const authorNames = buildAuthorNameMap(profiles ?? []);
 
   const actualSalesByDealer = new Map<string, number>();
