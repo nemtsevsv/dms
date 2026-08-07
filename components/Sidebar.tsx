@@ -69,7 +69,7 @@ export default function Sidebar() {
 
   const NavLinks = (
     <>
-      <nav className="flex-1 px-3 py-4 space-y-4">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-4">
         {sections.map((section, si) => (
           <div key={si}>
             {section.label && (
@@ -100,8 +100,10 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-      <UserProfileCard onNavigate={() => setOpen(false)} />
-      <div className="px-3 py-4 border-t border-slate-800">
+      <div className="shrink-0">
+        <UserProfileCard onNavigate={() => setOpen(false)} />
+      </div>
+      <div className="shrink-0 px-3 py-4 border-t border-slate-800">
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white w-full"
@@ -144,8 +146,8 @@ export default function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 bg-slate-900 text-slate-200 min-h-screen flex-col">
-        <div className="border-b border-slate-800">
+      <aside className="hidden md:flex w-60 shrink-0 bg-slate-900 text-slate-200 h-screen sticky top-0 flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-slate-800">
           <img src="/capof-badge.png" alt="CAPOF" className="w-full h-auto px-5 pt-5 brightness-0 invert opacity-90" />
           <div className="flex items-center gap-2 px-5 pb-5 pt-3">
             <img src="/leica-badge.png" alt="Leica" className="w-7 h-7 rounded-full shrink-0" />

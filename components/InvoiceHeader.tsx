@@ -69,50 +69,55 @@ export default function InvoiceHeader({
   const financialResult = round2(invoiceTotal - lcAgTotal - logisticsDeMn - logisticsMnXx);
   const marginPct = invoiceTotal > 0 ? round2((financialResult / invoiceTotal) * 100) : 0;
 
-  const inputCls = "px-3 py-2 border border-slate-300 rounded-lg text-sm w-full";
+  const inputCls = "px-3 py-2 border border-slate-300 rounded-lg text-sm w-full bg-white";
   const labelCls = "block text-xs font-medium text-slate-500 mb-1";
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm mb-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5">
-        {/* Left column — the invoice itself */}
-        <div className="space-y-4">
-          <div>
-            <label className={labelCls}>Invoice Number</label>
-            <input className={inputCls} value={form.invoice_number} onChange={(e) => update("invoice_number", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5 items-stretch">
+        {/* Left panel — what we invoice the dealer. Same padding/structure
+            as the Purchase panel on the right so every row lines up. */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Invoice to Dealer</h3>
+          <div className="space-y-4">
             <div>
-              <label className={labelCls}>Invoice Date</label>
-              <input type="date" className={inputCls} value={form.invoice_date} onChange={(e) => update("invoice_date", e.target.value)} />
+              <label className={labelCls}>Invoice Number</label>
+              <input className={inputCls} value={form.invoice_number} onChange={(e) => update("invoice_number", e.target.value)} />
             </div>
-            <div>
-              <label className={labelCls}>Total</label>
-              <input readOnly className={inputCls + " bg-slate-50 text-slate-700"} value={`${invoiceTotal.toLocaleString("de-DE")} ${invoice.currency}`} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Invoice Date</label>
+                <input type="date" className={inputCls} value={form.invoice_date} onChange={(e) => update("invoice_date", e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>Total</label>
+                <input readOnly className={inputCls + " bg-slate-50 text-slate-700"} value={`${invoiceTotal.toLocaleString("de-DE")} ${invoice.currency}`} />
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="w-28 shrink-0">
-              <label className={labelCls}>Status</label>
-              <select className={inputCls} value={form.status} onChange={(e) => update("status", e.target.value)}>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className={labelCls}>Financial Result</label>
-              <div className={`px-3 py-2 rounded-lg text-sm border font-medium ${marginBgClass(marginPct)} ${marginColorClass(marginPct)}`}>
-                {financialResult.toLocaleString("de-DE")} {invoice.currency} · {marginPct}% margin
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Status</label>
+                <select className={inputCls} value={form.status} onChange={(e) => update("status", e.target.value)}>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Financial Result</label>
+                <div className={`px-3 py-2 rounded-lg text-sm border font-medium leading-[1.375rem] ${marginBgClass(marginPct)} ${marginColorClass(marginPct)}`}>
+                  {financialResult.toLocaleString("de-DE")} {invoice.currency} · {marginPct}%
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right column — Purchase (what we were billed) */}
+        {/* Right panel — Purchase (what we were billed) */}
         <div className="bg-slate-100 border border-slate-200 rounded-xl p-4">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Purchase</h3>
           <div className="space-y-4">
             <div>
               <label className={labelCls}>LC AG Invoice #</label>
