@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -14,13 +14,10 @@ import {
   FileBarChart,
   Calendar,
   Megaphone,
-  LogOut,
   Menu,
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import UserProfileCard from "./UserProfileCard";
 
 const sections = [
   {
@@ -57,62 +54,40 @@ const sections = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const supabase = createClient();
   const [open, setOpen] = useState(false);
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   const NavLinks = (
-    <>
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-4">
-        {sections.map((section, si) => (
-          <div key={si}>
-            {section.label && (
-              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</div>
-            )}
-            <div className="space-y-1">
-              {section.items.map((item) => {
-                const active = pathname.startsWith(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      active
-                        ? "bg-slate-800 text-white"
-                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-            {si < sections.length - 1 && <div className="border-t border-slate-800 mt-4" />}
+    <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-4">
+      {sections.map((section, si) => (
+        <div key={si}>
+          {section.label && (
+            <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</div>
+          )}
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const active = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    active
+                      ? "bg-slate-800 text-white"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
-        ))}
-      </nav>
-      <div className="shrink-0">
-        <UserProfileCard onNavigate={() => setOpen(false)} />
-      </div>
-      <div className="shrink-0 px-3 py-4 border-t border-slate-800">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white w-full"
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
-      </div>
-    </>
+          {si < sections.length - 1 && <div className="border-t border-slate-800 mt-4" />}
+        </div>
+      ))}
+    </nav>
   );
 
   return (
