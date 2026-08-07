@@ -72,18 +72,19 @@ export default function Sidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] leading-tight transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm leading-tight transition-colors ${
                     active
                       ? "bg-slate-800 text-white"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  <Icon size={15} className="shrink-0" />
+                  <Icon size={16} className="shrink-0" />
                   {item.label}
                 </Link>
               );
             })}
           </div>
+          {si < sections.length - 1 && <div className="border-t border-slate-800 mt-3" />}
         </div>
       ))}
     </nav>

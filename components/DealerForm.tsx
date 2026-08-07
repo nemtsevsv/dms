@@ -96,8 +96,8 @@ export default function DealerForm({
   }
 
   const inputCls =
-    "w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-300";
-  const labelCls = "block text-xs font-medium text-slate-500 mb-1";
+    "w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-300";
+  const labelCls = "block text-xs font-medium text-slate-500 mb-0.5";
 
   // If the dealer's current manager isn't in the profiles list (e.g. typed
   // manually before this feature existed), keep it selectable so nothing breaks.
@@ -107,8 +107,8 @@ export default function DealerForm({
       : managers;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
           <label className={labelCls}>Company Name *</label>
           <input required className={inputCls} value={form.company_name} onChange={(e) => update("company_name", e.target.value)} />
@@ -127,16 +127,23 @@ export default function DealerForm({
           </div>
         </div>
         <div>
+          <label className={labelCls}>Assigned Manager</label>
+          <select className={inputCls} value={form.assigned_manager} onChange={(e) => update("assigned_manager", e.target.value)}>
+            <option value="">— none —</option>
+            {managerOptions.map((m) => (
+              <option key={m.email} value={m.email}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className={labelCls}>Country</label>
           <input className={inputCls} value={form.country} onChange={(e) => update("country", e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>City</label>
           <input className={inputCls} value={form.city} onChange={(e) => update("city", e.target.value)} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Address</label>
-          <input className={inputCls} value={form.address} onChange={(e) => update("address", e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>Website</label>
@@ -155,16 +162,9 @@ export default function DealerForm({
             )}
           </div>
         </div>
-        <div>
-          <label className={labelCls}>Assigned Manager</label>
-          <select className={inputCls} value={form.assigned_manager} onChange={(e) => update("assigned_manager", e.target.value)}>
-            <option value="">— none —</option>
-            {managerOptions.map((m) => (
-              <option key={m.email} value={m.email}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <label className={labelCls}>Address</label>
+          <input className={inputCls} value={form.address} onChange={(e) => update("address", e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>Contact Person</label>
@@ -190,7 +190,7 @@ export default function DealerForm({
             onBlur={() => setDiscountText(discountFormatter.format(parseLocaleNumber(discountText)))}
           />
         </div>
-        <div>
+        <div className="sm:col-span-2 lg:col-span-2">
           <label className={labelCls}>Annual Sales Plan (EUR) — current fiscal year</label>
           <input
             type="text"
@@ -204,7 +204,7 @@ export default function DealerForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <TagMultiSelect
           label="Product Categories"
           tableName="product_categories"
@@ -221,7 +221,7 @@ export default function DealerForm({
 
       <div>
         <label className={labelCls}>AI Notes</label>
-        <textarea className={inputCls} rows={3} value={form.ai_notes} onChange={(e) => update("ai_notes", e.target.value)} />
+        <textarea className={inputCls} rows={2} value={form.ai_notes} onChange={(e) => update("ai_notes", e.target.value)} />
       </div>
 
       <div className="flex gap-3">
