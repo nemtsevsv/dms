@@ -12,6 +12,8 @@ import {
   BarChart3,
   TrendingUp,
   FileBarChart,
+  Calendar,
+  Megaphone,
   LogOut,
   Menu,
   X,
@@ -37,6 +39,14 @@ const sections = [
       { href: "/retail-dashboard", label: "Retail Dashboard", icon: TrendingUp },
       { href: "/stores", label: "Stores", icon: Store },
       { href: "/retail-reports", label: "Retail Reports", icon: FileBarChart },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { href: "/marketing-dashboard", label: "Marketing Dashboard", icon: Calendar },
+      { href: "/marketing-activities", label: "Activities", icon: Megaphone },
+      { href: "/marketing-reports", label: "Marketing Reports", icon: FileBarChart },
     ],
   },
   {
