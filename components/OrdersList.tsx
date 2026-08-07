@@ -14,6 +14,7 @@ type Order = {
   currency: string;
   dealers: { id: string; company_name: string } | null;
   computedTotal: number;
+  invoicedTotal: number;
   waitingCount: number;
 };
 
@@ -34,7 +35,7 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
   const [dateTo, setDateTo] = useState("");
   const [dealerFilter, setDealerFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<"order_date" | "computedTotal">("order_date");
+  const [sortKey, setSortKey] = useState<"order_date" | "computedTotal" | "invoicedTotal">("order_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const dealerOptions = Array.from(new Set(orders.map((o) => o.dealers?.company_name ?? "—")));
@@ -54,11 +55,12 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
       .sort((a, b) => {
         const dir = sortDir === "asc" ? 1 : -1;
         if (sortKey === "computedTotal") return (a.computedTotal - b.computedTotal) * dir;
+        if (sortKey === "invoicedTotal") return (a.invoicedTotal - b.invoicedTotal) * dir;
         return a.order_date.localeCompare(b.order_date) * dir;
       });
   }, [orders, search, dateFrom, dateTo, dealerFilter, statusFilter, sortKey, sortDir]);
 
-  function handleSort(key: "order_date" | "computedTotal", dir: "asc" | "desc") {
+  function handleSort(key: "order_date" | "computedTotal" | "invoicedTotal", dir: "asc" | "desc") {
     setSortKey(key);
     setSortDir(dir);
   }
@@ -114,6 +116,17 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
                   onSort={(dir) => handleSort("computedTotal", dir)}
                 />
               </th>
+              <th className="text-right px-4 py-3">
+                <ColumnFilterHeader
+                  label="Invoiced"
+                  options={[]}
+                  selected={[]}
+                  onChange={() => {}}
+                  align="right"
+                  sortDir={sortKey === "invoicedTotal" ? sortDir : null}
+                  onSort={(dir) => handleSort("invoicedTotal", dir)}
+                />
+              </th>
               <th className="text-right px-4 py-3">Waiting</th>
             </tr>
           </thead>
@@ -136,13 +149,16 @@ export default function OrdersList({ orders }: { orders: Order[] }) {
                   {o.computedTotal.toLocaleString("de-DE")} {o.currency}
                 </td>
                 <td className="px-4 py-3 text-right">
+                  {o.invoicedTotal.toLocaleString("de-DE")} {o.currency}
+                </td>
+                <td className="px-4 py-3 text-right">
                   {o.waitingCount > 0 ? <span className="text-amber-600 font-medium">{o.waitingCount}</span> : <span className="text-slate-300">—</span>}
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-400">
+                <td colSpan={7} className="text-center py-8 text-slate-400">
                   No orders found
                 </td>
               </tr>

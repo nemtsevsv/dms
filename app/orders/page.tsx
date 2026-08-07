@@ -28,6 +28,21 @@ export default async function OrdersPage() {
     }
   }
 
+  const orderIds = (orders ?? []).map((o: any) => o.id);
+  const invoicedTotalByOrder: Record<string, number> = {};
+  if (orderIds.length > 0) {
+    const { data: invoiceRows } = await supabase
+      .from("invoices")
+      .select("order_id, status, invoice_items(total)")
+      .in("order_id", orderIds)
+      .neq("status", "Cancelled");
+    for (const inv of invoiceRows ?? []) {
+      if (!inv.order_id) continue;
+      const sum = (inv.invoice_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
+      invoicedTotalByOrder[inv.order_id] = (invoicedTotalByOrder[inv.order_id] ?? 0) + sum;
+    }
+  }
+
   const ordersWithStatus = (orders ?? []).map((o: any) => {
     let total = 0;
     let waitingCount = 0;
@@ -36,7 +51,7 @@ export default async function OrdersPage() {
       if (s.label !== "Cancelled") total += Number(item.total) || 0;
       if (s.waitingQty > 0) waitingCount += 1;
     }
-    return { ...o, computedTotal: total, waitingCount };
+    return { ...o, computedTotal: total, waitingCount, invoicedTotal: invoicedTotalByOrder[o.id] ?? 0 };
   });
 
   return (

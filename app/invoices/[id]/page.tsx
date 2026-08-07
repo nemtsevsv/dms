@@ -6,6 +6,7 @@ import DeleteInvoiceButton from "@/components/DeleteInvoiceButton";
 import CreatedByLine from "@/components/CreatedByLine";
 import FiscalYearBadge from "@/components/FiscalYearBadge";
 import { buildAuthorNameMap } from "@/lib/userNames";
+import { countryCode } from "@/lib/countryCodes";
 import { btnExport } from "@/lib/buttonStyles";
 import { Download } from "lucide-react";
 import Link from "next/link";
@@ -18,7 +19,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("*, dealers(id, company_name), orders(id, order_number)")
+    .select("*, dealers(id, company_name, country), orders(id, order_number)")
     .eq("id", params.id)
     .single();
   if (!invoice) notFound();
@@ -59,6 +60,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     }));
   }
 
+  const invoiceTotal = (items ?? []).reduce((s, it: any) => s + (Number(it.total) || 0), 0);
+  const dealerCountryCode = countryCode(invoice.dealers?.country);
+
   return (
     <AppShell>
       {invoice.orders && (
@@ -84,7 +88,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      <InvoiceHeader invoice={invoice} />
+      <InvoiceHeader invoice={invoice} invoiceTotal={invoiceTotal} dealerCountryCode={dealerCountryCode} />
       <InvoiceItemsManager invoiceId={invoice.id} items={items ?? []} currency={invoice.currency} orderItems={orderItemsForPicker} />
     </AppShell>
   );
