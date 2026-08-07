@@ -57,13 +57,13 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
   const NavLinks = (
-    <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-4">
+    <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
       {sections.map((section, si) => (
         <div key={si}>
           {section.label && (
             <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</div>
           )}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {section.items.map((item) => {
               const active = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -72,19 +72,18 @@ export default function Sidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] leading-tight transition-colors ${
                     active
                       ? "bg-slate-800 text-white"
                       : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`}
                 >
-                  <Icon size={16} />
+                  <Icon size={15} className="shrink-0" />
                   {item.label}
                 </Link>
               );
             })}
           </div>
-          {si < sections.length - 1 && <div className="border-t border-slate-800 mt-4" />}
         </div>
       ))}
     </nav>
@@ -122,16 +121,9 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 shrink-0 bg-slate-900 text-slate-200 h-screen sticky top-0 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-slate-800">
-          <img src="/capof-badge.png" alt="CAPOF" className="w-full h-auto px-5 pt-5 brightness-0 invert opacity-90" />
-          <div className="flex items-center gap-2 px-5 pb-5 pt-3">
-            <img src="/leica-badge.png" alt="Leica" className="w-7 h-7 rounded-full shrink-0" />
-            <div className="font-semibold text-white text-sm leading-tight">
-              Dealer Management
-              <br />
-              System
-            </div>
-          </div>
+        <div className="shrink-0 h-14 flex items-center gap-2.5 px-4 border-b border-slate-800">
+          <img src="/leica-badge.png" alt="Leica" className="w-7 h-7 rounded-full shrink-0" />
+          <span className="font-semibold text-white text-xs leading-tight whitespace-nowrap">Dealer Management System</span>
         </div>
         {NavLinks}
       </aside>
