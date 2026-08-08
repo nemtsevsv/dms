@@ -9,7 +9,7 @@ function fmt(n: number | null) {
   return n.toLocaleString("de-DE", { maximumFractionDigits: 0 });
 }
 
-export default function CountryForm({ country }: { country?: any }) {
+export default function CountryForm({ country, onSaved }: { country?: any; onSaved?: () => void }) {
   const router = useRouter();
   const supabase = createClient();
   const isEdit = !!country;
@@ -67,7 +67,10 @@ export default function CountryForm({ country }: { country?: any }) {
 
     if (isEdit) {
       await supabase.from("countries").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", country.id);
-      router.push(`/countries/${country.id}`);
+      router.refresh();
+      setSaving(false);
+      onSaved?.();
+      return;
     } else {
       const { data } = await supabase
         .from("countries")
