@@ -91,35 +91,29 @@ export default function CountryTable({ countries }: { countries: Country[] }) {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-sm min-w-[1150px]">
+        <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
-              <th className="text-left px-3 py-2.5">
+              <th className="text-left px-2.5 py-2.5">
                 <ColumnFilterHeader label="Name" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "name" ? sortDir : null} onSort={(dir) => handleSort("name", dir)} />
               </th>
-              <th className="text-left px-3 py-2.5">
+              <th className="text-left px-2.5 py-2.5">
                 <ColumnFilterHeader label="Capital" options={capitals} selected={capitalFilter} onChange={setCapitalFilter} sortDir={sortKey === "capital" ? sortDir : null} onSort={(dir) => handleSort("capital", dir)} />
               </th>
-              <th className="text-left px-3 py-2.5">Biggest Cities</th>
-              <th className="text-right px-3 py-2.5">
+              <th className="text-left px-2.5 py-2.5">Biggest Cities</th>
+              <th className="text-right px-2.5 py-2.5">
                 <ColumnFilterHeader label="Population" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "population" ? sortDir : null} onSort={(dir) => handleSort("population", dir)} />
               </th>
-              <th className="text-right px-3 py-2.5">
-                <ColumnFilterHeader label="GDP (mio USD)" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp" ? sortDir : null} onSort={(dir) => handleSort("gdp", dir)} />
+              <th className="text-right px-2.5 py-2.5">
+                <ColumnFilterHeader label="GDP, mio USD" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp" ? sortDir : null} onSort={(dir) => handleSort("gdp", dir)} />
               </th>
-              <th className="text-right px-3 py-2.5">
-                <ColumnFilterHeader label="GDP / capita" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp_per_capita" ? sortDir : null} onSort={(dir) => handleSort("gdp_per_capita", dir)} />
+              <th className="text-right px-2.5 py-2.5">
+                <ColumnFilterHeader label="GDP PPP, mio USD" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp_ppp" ? sortDir : null} onSort={(dir) => handleSort("gdp_ppp", dir)} />
               </th>
-              <th className="text-right px-3 py-2.5">
-                <ColumnFilterHeader label="GDP PPP (mio USD)" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp_ppp" ? sortDir : null} onSort={(dir) => handleSort("gdp_ppp", dir)} />
-              </th>
-              <th className="text-right px-3 py-2.5">
-                <ColumnFilterHeader label="GDP PPP / capita" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "gdp_ppp_per_capita" ? sortDir : null} onSort={(dir) => handleSort("gdp_ppp_per_capita", dir)} />
-              </th>
-              <th className="text-right px-3 py-2.5">
+              <th className="text-right px-2.5 py-2.5">
                 <ColumnFilterHeader label="HNWI" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "hnwi" ? sortDir : null} onSort={(dir) => handleSort("hnwi", dir)} />
               </th>
-              <th className="text-right px-3 py-2.5">
+              <th className="text-right px-2.5 py-2.5">
                 <ColumnFilterHeader label="VAT" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "vat" ? sortDir : null} onSort={(dir) => handleSort("vat", dir)} />
               </th>
             </tr>
@@ -127,27 +121,31 @@ export default function CountryTable({ countries }: { countries: Country[] }) {
           <tbody>
             {filtered.map((c) => (
               <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-3 py-2">
-                  <Link href={`/countries/${c.id}`} className="font-medium hover:underline">
+                <td className="px-2.5 py-2">
+                  <Link href={`/countries/${c.id}`} className="font-medium hover:underline whitespace-nowrap">
                     {c.name}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-slate-600">{c.capital ?? "—"}</td>
-                <td className="px-3 py-2 text-slate-500 max-w-[220px] truncate" title={c.biggest_cities ?? undefined}>
+                <td className="px-2.5 py-2 text-slate-600 whitespace-nowrap">{c.capital ?? "—"}</td>
+                <td className="px-2.5 py-2 text-slate-500 max-w-[130px] truncate" title={c.biggest_cities ?? undefined}>
                   {c.biggest_cities ?? "—"}
                 </td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmt(c.population)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmtMio(c.gdp)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmt(c.gdpPerCapita)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmtMio(c.gdp_ppp)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmt(c.gdpPppPerCapita)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{fmt(c.hnwi)}</td>
-                <td className="px-3 py-2 text-right text-slate-600">{c.vat !== null ? `${c.vat}%` : "—"}</td>
+                <td className="px-2.5 py-2 text-right text-slate-600 whitespace-nowrap">{fmt(c.population)}</td>
+                <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                  <div className="text-slate-700">{fmtMio(c.gdp)}</div>
+                  <div className="text-[11px] text-slate-400">{fmt(c.gdpPerCapita)}/cap</div>
+                </td>
+                <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                  <div className="text-slate-700">{fmtMio(c.gdp_ppp)}</div>
+                  <div className="text-[11px] text-slate-400">{fmt(c.gdpPppPerCapita)}/cap</div>
+                </td>
+                <td className="px-2.5 py-2 text-right text-slate-600 whitespace-nowrap">{fmt(c.hnwi)}</td>
+                <td className="px-2.5 py-2 text-right text-slate-600 whitespace-nowrap">{c.vat !== null ? `${c.vat}%` : "—"}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center py-8 text-slate-400">
+                <td colSpan={8} className="text-center py-8 text-slate-400">
                   No countries found
                 </td>
               </tr>
