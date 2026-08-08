@@ -35,6 +35,7 @@ export default async function StoresPage() {
     const sum = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
     salesByStore.set(r.store_id, (salesByStore.get(r.store_id) ?? 0) + sum);
   }
+  const fxRateByStore = new Map((stores ?? []).map((s) => [s.id, s.fx_rate_to_eur || 1]));
 
   return (
     <AppShell>
@@ -44,7 +45,7 @@ export default async function StoresPage() {
           + New Store
         </Link>
       </div>
-      <p className="text-xs text-slate-400 mb-3">Plan / Actual Sales shown for the current fiscal year, in each store's own currency.</p>
+      <p className="text-xs text-slate-400 mb-3">Plan / Actual Sales shown in EUR, converted at each store's exchange rate.</p>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
         <table className="w-full text-sm min-w-[750px]">
@@ -55,15 +56,16 @@ export default async function StoresPage() {
               <th className="text-left px-4 py-3">City</th>
               <th className="text-left px-4 py-3">Currency</th>
               <th className="text-left px-4 py-3">Status</th>
-              <th className="text-right px-4 py-3">Plan (FY)</th>
-              <th className="text-right px-4 py-3">Actual Sales</th>
+              <th className="text-right px-4 py-3">Plan (EUR)</th>
+              <th className="text-right px-4 py-3">Actual Sales (EUR)</th>
               <th className="text-right px-4 py-3">Achievement</th>
             </tr>
           </thead>
           <tbody>
             {(stores ?? []).map((s) => {
-              const plan = planByStore.get(s.id) ?? 0;
-              const actual = salesByStore.get(s.id) ?? 0;
+              const fxRate = fxRateByStore.get(s.id) || 1;
+              const plan = (planByStore.get(s.id) ?? 0) / fxRate;
+              const actual = (salesByStore.get(s.id) ?? 0) / fxRate;
               const pct = plan > 0 ? Math.round((actual / plan) * 100) : 0;
               return (
                 <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50">

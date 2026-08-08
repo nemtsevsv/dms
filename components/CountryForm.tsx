@@ -1,0 +1,148 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+function fmt(n: number | null) {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  return n.toLocaleString("de-DE", { maximumFractionDigits: 0 });
+}
+
+export default function CountryForm({ country }: { country?: any }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const isEdit = !!country;
+
+  const [form, setForm] = useState({
+    name: country?.name ?? "",
+    area: country?.area ?? "",
+    population: country?.population ?? "",
+    population_growth_rate: country?.population_growth_rate ?? "",
+    gdp: country?.gdp ?? "",
+    gdp_growth_rate: country?.gdp_growth_rate ?? "",
+    gdp_ppp: country?.gdp_ppp ?? "",
+    gdp_ppp_growth_rate: country?.gdp_ppp_growth_rate ?? "",
+    vat: country?.vat ?? "",
+    hnwi: country?.hnwi ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  function update(field: string, value: any) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  const num = (v: any) => (v === "" ? null : Number(v));
+  const population = num(form.population);
+  const gdp = num(form.gdp);
+  const gdpPpp = num(form.gdp_ppp);
+  const hnwi = num(form.hnwi);
+  const gdpPerCapita = population && gdp ? gdp / population : null;
+  const gdpPppPerCapita = population && gdpPpp ? gdpPpp / population : null;
+  const hnwiRatio = population && hnwi ? (hnwi / population) * 100 : null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const payload = {
+      name: form.name,
+      area: num(form.area),
+      population,
+      population_growth_rate: num(form.population_growth_rate),
+      gdp,
+      gdp_growth_rate: num(form.gdp_growth_rate),
+      gdp_ppp: gdpPpp,
+      gdp_ppp_growth_rate: num(form.gdp_ppp_growth_rate),
+      vat: num(form.vat),
+      hnwi,
+    };
+
+    if (isEdit) {
+      await supabase.from("countries").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", country.id);
+      router.push(`/countries/${country.id}`);
+    } else {
+      const { data } = await supabase
+        .from("countries")
+        .insert({ ...payload, created_by: user?.email ?? null })
+        .select()
+        .single();
+      router.push(`/countries/${data?.id}`);
+    }
+    router.refresh();
+    setSaving(false);
+  }
+
+  const inputCls = "w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-300";
+  const labelCls = "block text-xs font-medium text-slate-500 mb-0.5";
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl">
+      <div>
+        <label className={labelCls}>Country Name *</label>
+        <input required className={inputCls + " max-w-sm"} value={form.name} onChange={(e) => update("name", e.target.value)} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div>
+          <label className={labelCls}>Area (km²)</label>
+          <input type="number" className={inputCls} value={form.area} onChange={(e) => update("area", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Population</label>
+          <input type="number" className={inputCls} value={form.population} onChange={(e) => update("population", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Population Growth Rate (%/yr)</label>
+          <input type="number" step="0.01" className={inputCls} value={form.population_growth_rate} onChange={(e) => update("population_growth_rate", e.target.value)} />
+        </div>
+
+        <div>
+          <label className={labelCls}>GDP (USD)</label>
+          <input type="number" className={inputCls} value={form.gdp} onChange={(e) => update("gdp", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>GDP Growth Rate (%/yr)</label>
+          <input type="number" step="0.01" className={inputCls} value={form.gdp_growth_rate} onChange={(e) => update("gdp_growth_rate", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>GDP / capita</label>
+          <input readOnly className={inputCls + " bg-slate-50 text-slate-500"} value={fmt(gdpPerCapita)} />
+        </div>
+
+        <div>
+          <label className={labelCls}>GDP (PPP, intl. $)</label>
+          <input type="number" className={inputCls} value={form.gdp_ppp} onChange={(e) => update("gdp_ppp", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>GDP PPP Growth Rate (%/yr)</label>
+          <input type="number" step="0.01" className={inputCls} value={form.gdp_ppp_growth_rate} onChange={(e) => update("gdp_ppp_growth_rate", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>GDP PPP / capita</label>
+          <input readOnly className={inputCls + " bg-slate-50 text-slate-500"} value={fmt(gdpPppPerCapita)} />
+        </div>
+
+        <div>
+          <label className={labelCls}>HNWI (manual)</label>
+          <input type="number" className={inputCls} value={form.hnwi} onChange={(e) => update("hnwi", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>HNWI ratio (% of population)</label>
+          <input readOnly className={inputCls + " bg-slate-50 text-slate-500"} value={hnwiRatio !== null ? `${hnwiRatio.toFixed(3)}%` : "—"} />
+        </div>
+        <div>
+          <label className={labelCls}>VAT (%)</label>
+          <input type="number" step="0.1" className={inputCls} value={form.vat} onChange={(e) => update("vat", e.target.value)} />
+        </div>
+      </div>
+
+      <button type="submit" disabled={saving} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 disabled:opacity-50">
+        {saving ? "Saving..." : isEdit ? "Save Changes" : "Create Country"}
+      </button>
+    </form>
+  );
+}

@@ -33,7 +33,7 @@ export default async function MarketingDashboardPage() {
   const calendarRangeStart = toDateStr(new Date(now.getFullYear() - 1, now.getMonth(), 1));
   const calendarRangeEnd = toDateStr(new Date(now.getFullYear() + 1, now.getMonth() + 1, 0));
 
-  const [{ data: calendarActivities }, { data: invoiceRows }, { data: receiptRows }] = await Promise.all([
+  const [{ data: calendarActivities }, { data: invoiceRows }, { data: receiptRows }, { data: storesForFx }] = await Promise.all([
     supabase
       .from("marketing_activities")
       .select("id, name, activity_type, status, start_date, end_date, country, store_id, dealer_id, reach, clicks, leads, planned_participants, registered, participated, purchased")
@@ -41,10 +41,12 @@ export default async function MarketingDashboardPage() {
       .gte("end_date", calendarRangeStart)
       .order("start_date"),
     supabase.from("invoices").select("invoice_date, status, invoice_items(total)").neq("status", "Cancelled").gte("invoice_date", fyStartStr).lte("invoice_date", fyEndStr),
-    supabase.from("store_receipts").select("occurred_at, store_receipt_items(total)").gte("occurred_at", `${fyStartStr}T00:00:00Z`).lte("occurred_at", `${fyEndStr}T23:59:59Z`),
+    supabase.from("store_receipts").select("store_id, occurred_at, store_receipt_items(total)").gte("occurred_at", `${fyStartStr}T00:00:00Z`).lte("occurred_at", `${fyEndStr}T23:59:59Z`),
+    supabase.from("stores").select("id, fx_rate_to_eur"),
   ]);
 
   const activities = calendarActivities ?? [];
+  const fxRateByStore = new Map((storesForFx ?? []).map((s) => [s.id, s.fx_rate_to_eur || 1]));
 
   // ---- Level 1: this-month widgets ----
   const thisMonthActivities = activities.filter((a) => a.start_date.slice(0, 7) <= nowKey && a.end_date.slice(0, 7) >= nowKey);
@@ -78,8 +80,9 @@ export default async function MarketingDashboardPage() {
   const retailSalesByMonth = new Map<string, number>();
   for (const r of receiptRows ?? []) {
     const k = (r.occurred_at as string).slice(0, 7);
+    const fxRate = fxRateByStore.get(r.store_id) || 1;
     const total = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
-    retailSalesByMonth.set(k, (retailSalesByMonth.get(k) ?? 0) + total);
+    retailSalesByMonth.set(k, (retailSalesByMonth.get(k) ?? 0) + total / fxRate);
   }
 
   const dealerRelevant = activities.filter((a) => a.dealer_id || a.country);
@@ -87,7 +90,7 @@ export default async function MarketingDashboardPage() {
 
   function monthlyActivityStats(list: typeof activities, key: string) {
     const overlapping = list.filter((a) => a.start_date.slice(0, 7) <= key && a.end_date.slice(0, 7) >= key);
-    return { count: overlapping.length, reach: sum(overlapping, "reach") + sum(overlapping, "planned_participants") };
+    return { count: overlapping.length, reach: sum(overlapping, "reach") };
   }
 
   const dealerChartData = fyMonths.map((m) => {

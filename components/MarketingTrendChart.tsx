@@ -38,7 +38,7 @@ export default function MarketingTrendChart({ data, barColor, barLabel }: { data
           <span className="w-4 h-0.5 bg-amber-500 inline-block" /> Activities
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 bg-violet-500 inline-block" /> Reach + Planned
+          <span className="w-4 h-0.5 bg-violet-500 inline-block" /> Reach
         </span>
       </div>
       <div className="relative h-52">
@@ -58,7 +58,7 @@ export default function MarketingTrendChart({ data, barColor, barLabel }: { data
         <div className="flex items-end gap-1 h-full relative">
           {data.map((d) => (
             <div key={d.label} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-              {d.sales > 0 && <span className="text-[8px] text-slate-500 whitespace-nowrap">{formatThousandsRoundUp(d.sales)}</span>}
+              {d.sales > 0 && <span className="text-[8px] text-slate-500 whitespace-nowrap">{formatThousandsRoundUp(d.sales)} EUR</span>}
               <div
                 className="w-2.5 sm:w-3 rounded-t"
                 style={{ height: `${(d.sales / maxBar) * 100}%`, backgroundColor: barColor }}

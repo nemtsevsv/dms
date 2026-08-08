@@ -14,6 +14,7 @@ import {
   FileBarChart,
   Calendar,
   Megaphone,
+  Globe,
   Menu,
   X,
 } from "lucide-react";
@@ -48,7 +49,10 @@ const sections = [
   },
   {
     label: "",
-    items: [{ href: "/products", label: "Products", icon: Package }],
+    items: [
+      { href: "/products", label: "Products", icon: Package },
+      { href: "/countries", label: "Countries", icon: Globe },
+    ],
   },
 ];
 
