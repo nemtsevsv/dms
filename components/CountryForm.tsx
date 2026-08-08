@@ -16,6 +16,8 @@ export default function CountryForm({ country }: { country?: any }) {
 
   const [form, setForm] = useState({
     name: country?.name ?? "",
+    capital: country?.capital ?? "",
+    biggest_cities: country?.biggest_cities ?? "",
     area: country?.area ?? "",
     population: country?.population ?? "",
     population_growth_rate: country?.population_growth_rate ?? "",
@@ -50,6 +52,8 @@ export default function CountryForm({ country }: { country?: any }) {
 
     const payload = {
       name: form.name,
+      capital: form.capital || null,
+      biggest_cities: form.biggest_cities || null,
       area: num(form.area),
       population,
       population_growth_rate: num(form.population_growth_rate),
@@ -84,6 +88,17 @@ export default function CountryForm({ country }: { country?: any }) {
       <div>
         <label className={labelCls}>Country Name *</label>
         <input required className={inputCls + " max-w-sm"} value={form.name} onChange={(e) => update("name", e.target.value)} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Capital</label>
+          <input className={inputCls} value={form.capital} onChange={(e) => update("capital", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Biggest Cities</label>
+          <input className={inputCls} placeholder="e.g. City A (pop.), City B (pop.)" value={form.biggest_cities} onChange={(e) => update("biggest_cities", e.target.value)} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

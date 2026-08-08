@@ -33,7 +33,7 @@ export default async function MarketingDashboardPage() {
   const calendarRangeStart = toDateStr(new Date(now.getFullYear() - 1, now.getMonth(), 1));
   const calendarRangeEnd = toDateStr(new Date(now.getFullYear() + 1, now.getMonth() + 1, 0));
 
-  const [{ data: calendarActivities }, { data: invoiceRows }, { data: receiptRows }, { data: storesForFx }] = await Promise.all([
+  const [{ data: calendarActivities }, { data: invoiceRows }, { data: receiptRows }, { data: storesForFx }, { data: trafficRows }] = await Promise.all([
     supabase
       .from("marketing_activities")
       .select("id, name, activity_type, status, start_date, end_date, country, store_id, dealer_id, reach, clicks, leads, planned_participants, registered, participated, purchased")
@@ -43,6 +43,7 @@ export default async function MarketingDashboardPage() {
     supabase.from("invoices").select("invoice_date, status, invoice_items(total)").neq("status", "Cancelled").gte("invoice_date", fyStartStr).lte("invoice_date", fyEndStr),
     supabase.from("store_receipts").select("store_id, occurred_at, store_receipt_items(total)").gte("occurred_at", `${fyStartStr}T00:00:00Z`).lte("occurred_at", `${fyEndStr}T23:59:59Z`),
     supabase.from("stores").select("id, fx_rate_to_eur"),
+    supabase.from("store_traffic_events").select("occurred_at").eq("event_type", "visitor").gte("occurred_at", `${fyStartStr}T00:00:00Z`).lte("occurred_at", `${fyEndStr}T23:59:59Z`),
   ]);
 
   const activities = calendarActivities ?? [];
@@ -78,11 +79,18 @@ export default async function MarketingDashboardPage() {
     dealerSalesByMonth.set(k, (dealerSalesByMonth.get(k) ?? 0) + total);
   }
   const retailSalesByMonth = new Map<string, number>();
+  const retailReceiptsCountByMonth = new Map<string, number>();
   for (const r of receiptRows ?? []) {
     const k = (r.occurred_at as string).slice(0, 7);
     const fxRate = fxRateByStore.get(r.store_id) || 1;
     const total = (r.store_receipt_items ?? []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0);
     retailSalesByMonth.set(k, (retailSalesByMonth.get(k) ?? 0) + total / fxRate);
+    retailReceiptsCountByMonth.set(k, (retailReceiptsCountByMonth.get(k) ?? 0) + 1);
+  }
+  const trafficByMonth = new Map<string, number>();
+  for (const t of trafficRows ?? []) {
+    const k = (t.occurred_at as string).slice(0, 7);
+    trafficByMonth.set(k, (trafficByMonth.get(k) ?? 0) + 1);
   }
 
   const dealerRelevant = activities.filter((a) => a.dealer_id || a.country);
@@ -93,14 +101,26 @@ export default async function MarketingDashboardPage() {
     return { count: overlapping.length, reach: sum(overlapping, "reach") };
   }
 
-  const dealerChartData = fyMonths.map((m) => {
-    const stats = monthlyActivityStats(dealerRelevant, m.key);
-    return { label: m.label, sales: dealerSalesByMonth.get(m.key) ?? 0, eventCount: stats.count, reach: stats.reach };
-  });
-  const retailChartData = fyMonths.map((m) => {
-    const stats = monthlyActivityStats(retailRelevant, m.key);
-    return { label: m.label, sales: retailSalesByMonth.get(m.key) ?? 0, eventCount: stats.count, reach: stats.reach };
-  });
+  const dealerChartData = fyMonths.map((m) => ({ label: m.label, sales: dealerSalesByMonth.get(m.key) ?? 0 }));
+  const retailChartData = fyMonths.map((m) => ({ label: m.label, sales: retailSalesByMonth.get(m.key) ?? 0 }));
+
+  const dealerActivityCounts = fyMonths.map((m) => monthlyActivityStats(dealerRelevant, m.key).count);
+  const dealerReach = fyMonths.map((m) => monthlyActivityStats(dealerRelevant, m.key).reach);
+  const retailActivityCounts = fyMonths.map((m) => monthlyActivityStats(retailRelevant, m.key).count);
+  const retailReach = fyMonths.map((m) => monthlyActivityStats(retailRelevant, m.key).reach);
+  const trafficSeries = fyMonths.map((m) => trafficByMonth.get(m.key) ?? 0);
+  const receiptsSeries = fyMonths.map((m) => retailReceiptsCountByMonth.get(m.key) ?? 0);
+
+  const dealerLines = [
+    { key: "activities", label: "Activities", color: "#f59e0b", values: dealerActivityCounts },
+    { key: "reach", label: "Reach", color: "#8b5cf6", values: dealerReach },
+  ];
+  const retailLines = [
+    { key: "activities", label: "Activities", color: "#f59e0b", values: retailActivityCounts },
+    { key: "reach", label: "Reach", color: "#8b5cf6", values: retailReach },
+    { key: "traffic", label: "Traffic", color: "#0EA5E9", values: trafficSeries },
+    { key: "receipts", label: "Receipts", color: "#EC4899", values: receiptsSeries },
+  ];
 
   return (
     <AppShell>
@@ -121,11 +141,11 @@ export default async function MarketingDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <h2 className="font-medium mb-4">Dealers — Sales vs. Marketing Activity</h2>
-          <MarketingTrendChart data={dealerChartData} barColor="#2563EB" barLabel="Dealer Sales" />
+          <MarketingTrendChart data={dealerChartData} barColor="#BFDBFE" barLabel="Dealer Sales" lines={dealerLines} />
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <h2 className="font-medium mb-4">Retail — Sales vs. Marketing Activity</h2>
-          <MarketingTrendChart data={retailChartData} barColor="#10B981" barLabel="Retail Sales" />
+          <MarketingTrendChart data={retailChartData} barColor="#A7F3D0" barLabel="Retail Sales" lines={retailLines} />
         </div>
       </div>
 

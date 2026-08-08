@@ -39,6 +39,8 @@ export default async function CountryPage({ params }: { params: { id: string } }
   const hnwiRatio = country.population && country.hnwi ? (country.hnwi / country.population) * 100 : null;
 
   const stats = [
+    { label: "Capital", value: country.capital || "—" },
+    { label: "Biggest Cities", value: country.biggest_cities || "—" },
     { label: "Area", value: country.area ? `${fmt(country.area)} km²` : "—" },
     { label: "Population", value: fmt(country.population), sub: growthLabel(country.population_growth_rate) },
     { label: "GDP", value: country.gdp ? `${fmt(country.gdp)} USD` : "—", sub: growthLabel(country.gdp_growth_rate) },
