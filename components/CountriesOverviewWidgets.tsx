@@ -45,37 +45,41 @@ export default function CountriesOverviewWidgets({ countries, tradeRows }: { cou
         </div>
       ))}
       <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm">
-        <div className="flex items-center justify-between gap-1 mb-1">
-          <span className="text-xs text-slate-400">Total EU Import, mio EUR</span>
-        </div>
-        <div className="text-lg font-semibold text-slate-800 mb-1.5">{fmt(totalEuImportMio)}</div>
-        <div className="flex items-center gap-1">
-          <select
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            className="text-[10px] border border-slate-200 rounded px-1 py-0.5 flex-1 min-w-0"
-            title="Filter by product group"
-          >
-            <option value="all">All groups</option>
-            {productGroups.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-          <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            className="text-[10px] border border-slate-200 rounded px-1 py-0.5 w-16 shrink-0"
-            title="Filter by year"
-          >
-            <option value="all">All yrs</option>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-xs text-slate-400 mb-1">EU Import, mio EUR</div>
+            <div className="text-lg font-semibold text-slate-800">
+              {totalEuImportMio.toLocaleString("de-DE", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 shrink-0 w-24">
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              className="text-[10px] border border-slate-200 rounded px-1 py-0.5 w-full"
+              title="Filter by product group"
+            >
+              <option value="all">All groups</option>
+              {productGroups.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="text-[10px] border border-slate-200 rounded px-1 py-0.5 w-full"
+              title="Filter by year"
+            >
+              <option value="all">All yrs</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>
