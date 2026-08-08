@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CountriesPage() {
   const supabase = createClient();
-  const { data: countries } = await supabase.from("countries").select("id, name, population, gdp, gdp_ppp, vat").order("name");
+  const { data: countries } = await supabase.from("countries").select("id, name, capital, biggest_cities, population, gdp, gdp_ppp, hnwi, vat").order("name");
 
   return (
     <AppShell>

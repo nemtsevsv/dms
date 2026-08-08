@@ -45,7 +45,7 @@ export default function MarketingTrendChart({ data, barColor, barLabel, lines }:
         ))}
       </div>
       <div className="relative h-52">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none z-10">
           {scaledLines.map((line) => {
             const points = line.values.map((v, i) => `${((i + 0.5) / line.values.length) * 100},${line.scaleFn(v)}`).join(" ");
             return (
