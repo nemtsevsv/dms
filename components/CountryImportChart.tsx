@@ -11,6 +11,12 @@ export default function CountryImportChart({ countryName, rows }: { countryName:
   const allImports = rows.filter((r) => r.flow === "import" && r.importing_country === countryName);
   const originCountries = Array.from(new Set(allImports.map((r) => r.exporting_country))).sort();
 
+  // Colors are assigned once, from the full (unfiltered) set of product
+  // groups, sorted alphabetically — so a group keeps the same color no
+  // matter which year or origin-country filter is applied.
+  const allGroups = Array.from(new Set(allImports.map((r) => r.product_group || "Other"))).sort();
+  const colorMap = new Map(allGroups.map((g, i) => [g, COLORS[i % COLORS.length]]));
+
   const [originFilter, setOriginFilter] = useState<string[]>([]);
 
   const imports = useMemo(
@@ -19,7 +25,7 @@ export default function CountryImportChart({ countryName, rows }: { countryName:
   );
 
   const years = Array.from(new Set(imports.map((r) => r.year))).sort();
-  const groups = Array.from(new Set(imports.map((r) => r.product_group || "Other")));
+  const groups = allGroups.filter((g) => imports.some((r) => (r.product_group || "Other") === g));
 
   const dataByYear = years.map((year) => {
     const byGroup: Record<string, number> = {};
@@ -49,9 +55,9 @@ export default function CountryImportChart({ countryName, rows }: { countryName:
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3 mb-3 mt-3">
-            {groups.map((g, i) => (
+            {groups.map((g) => (
               <span key={g} className="flex items-center gap-1.5 text-xs">
-                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: colorMap.get(g) }} />
                 {g}
               </span>
             ))}
@@ -60,14 +66,14 @@ export default function CountryImportChart({ countryName, rows }: { countryName:
             {dataByYear.map((d) => (
               <div key={d.year} className="flex flex-col items-center gap-1 h-full justify-end shrink-0">
                 <div className="flex items-end gap-1 h-full">
-                  {groups.map((g, i) => {
+                  {groups.map((g) => {
                     const v = d.byGroup[g] ?? 0;
                     return (
                       <div key={g} className="flex flex-col items-center justify-end h-full">
                         {v > 0 && <span className="text-[8px] text-slate-500 whitespace-nowrap">{Math.round(v).toLocaleString("de-DE")}</span>}
                         <div
                           className="w-3.5 sm:w-4 rounded-t"
-                          style={{ height: `${(v / maxValue) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}
+                          style={{ height: `${(v / maxValue) * 100}%`, backgroundColor: colorMap.get(g) }}
                           title={`${g}: ${Math.round(v).toLocaleString("de-DE")}`}
                         />
                       </div>

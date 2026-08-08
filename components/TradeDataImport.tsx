@@ -106,9 +106,6 @@ export default function TradeDataImport() {
         {importing ? "Importing..." : "Upload Trade Data (.xls/.xlsx)"}
         <input ref={fileInputRef} type="file" accept=".xls,.xlsx" onChange={handleFile} className="hidden" disabled={importing} />
       </label>
-      <p className="text-xs text-slate-400 mt-1.5">
-        Columns: Exporting Country, Importing Country, Product Group, Product, HS code, FLOW (import/export), Year, QUANTITY, VALUE
-      </p>
       {result && (
         <div className="mt-2 text-sm bg-slate-50 border border-slate-200 rounded-lg p-3">
           <p>

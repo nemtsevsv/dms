@@ -72,12 +72,13 @@ export default function CountryTradeOverview({ countryName, rows }: { countryNam
   return (
     <div>
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-4">
-        <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-          <h3 className="font-medium text-sm">Trade Data (Export/Import)</h3>
+        <div className="flex items-center gap-3 flex-wrap">
+          <TradeDataImport />
           {rows.length > 0 && <ClearTradeDataButton countryName={countryName} />}
         </div>
-        <p className="text-xs text-slate-400 mb-3">Upload a file to add trade records for {countryName} — rows where it appears as either the exporting or importing country.</p>
-        <TradeDataImport />
+        <p className="text-xs text-slate-400 mt-2">
+          Columns: Exporting Country, Importing Country, Product Group, Product, HS code, FLOW (import/export), Year, QUANTITY, VALUE
+        </p>
       </div>
 
       {/* Table wrapper keeps a minimum height so an open column filter

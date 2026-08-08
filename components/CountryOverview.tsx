@@ -72,10 +72,10 @@ export default function CountryOverview({ country }: { country: any }) {
 
           {/* Block 2 — economy */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="GDP, mio USD" value={country.gdp ? fmtMio(country.gdp) : "—"} sub={growthLabel(country.gdp_growth_rate)} />
+            <StatCard label="GDP" value={country.gdp ? `${fmtMio(country.gdp)} mio USD` : "—"} sub={growthLabel(country.gdp_growth_rate)} />
             <StatCard label="GDP / capita" value={gdpPerCapita ? `${fmt(gdpPerCapita)} USD` : "—"} />
-            <StatCard label="GDP (PPP), mio USD" value={country.gdp_ppp ? fmtMio(country.gdp_ppp) : "—"} sub={growthLabel(country.gdp_ppp_growth_rate)} />
-            <StatCard label="GDP PPP / capita" value={gdpPppPerCapita ? `${fmt(gdpPppPerCapita)} intl.$` : "—"} />
+            <StatCard label="GDP (PPP)" value={country.gdp_ppp ? `${fmtMio(country.gdp_ppp)} mio USD` : "—"} sub={growthLabel(country.gdp_ppp_growth_rate)} />
+            <StatCard label="GDP PPP / capita" value={gdpPppPerCapita ? `${fmt(gdpPppPerCapita)} USD` : "—"} />
           </div>
 
           {/* Block 3 — wealth, Block 4 — tax */}

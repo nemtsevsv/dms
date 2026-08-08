@@ -132,7 +132,7 @@ export default function CountryForm({ country, onSaved }: { country?: any; onSav
         </div>
 
         <div>
-          <label className={labelCls}>GDP (PPP, intl. $)</label>
+          <label className={labelCls}>GDP (PPP, USD)</label>
           <input type="number" className={inputCls} value={form.gdp_ppp} onChange={(e) => update("gdp_ppp", e.target.value)} />
         </div>
         <div>
