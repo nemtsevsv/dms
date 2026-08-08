@@ -9,7 +9,7 @@ export default async function CountriesPage() {
   const supabase = createClient();
   const [{ data: countries }, { data: tradeRows }] = await Promise.all([
     supabase.from("countries").select("id, name, capital, biggest_cities, population, gdp, gdp_ppp, hnwi, vat").order("name"),
-    supabase.from("trade_data").select("exporting_country, importing_country, flow, hs_code, value"),
+    supabase.from("trade_data").select("exporting_country, importing_country, flow, product_group, year, value"),
   ]);
 
   return (
