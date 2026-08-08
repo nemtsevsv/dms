@@ -9,6 +9,11 @@ function fmt(n: number | null, digits = 0) {
   return n.toLocaleString("de-DE", { maximumFractionDigits: digits });
 }
 
+function fmtMio(n: number | null) {
+  if (n === null || n === undefined) return "—";
+  return (n / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 0 });
+}
+
 function growthLabel(n: number | null) {
   if (n === null || n === undefined) return null;
   return `${n > 0 ? "+" : ""}${n}%/yr`;
@@ -67,9 +72,9 @@ export default function CountryOverview({ country }: { country: any }) {
 
           {/* Block 2 — economy */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="GDP" value={country.gdp ? `${fmt(country.gdp)} USD` : "—"} sub={growthLabel(country.gdp_growth_rate)} />
+            <StatCard label="GDP, mio USD" value={country.gdp ? fmtMio(country.gdp) : "—"} sub={growthLabel(country.gdp_growth_rate)} />
             <StatCard label="GDP / capita" value={gdpPerCapita ? `${fmt(gdpPerCapita)} USD` : "—"} />
-            <StatCard label="GDP (PPP)" value={country.gdp_ppp ? `${fmt(country.gdp_ppp)} intl.$` : "—"} sub={growthLabel(country.gdp_ppp_growth_rate)} />
+            <StatCard label="GDP (PPP), mio USD" value={country.gdp_ppp ? fmtMio(country.gdp_ppp) : "—"} sub={growthLabel(country.gdp_ppp_growth_rate)} />
             <StatCard label="GDP PPP / capita" value={gdpPppPerCapita ? `${fmt(gdpPppPerCapita)} intl.$` : "—"} />
           </div>
 

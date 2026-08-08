@@ -2,8 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import CountryOverview from "@/components/CountryOverview";
 import DeleteCountryButton from "@/components/DeleteCountryButton";
-import TradeDataImport from "@/components/TradeDataImport";
-import ClearTradeDataButton from "@/components/ClearTradeDataButton";
 import CountryTradeOverview from "@/components/CountryTradeOverview";
 import CountryImportChart from "@/components/CountryImportChart";
 import Link from "next/link";
@@ -37,15 +35,6 @@ export default async function CountryPage({ params }: { params: { id: string } }
       </div>
 
       <CountryOverview country={country} />
-
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-          <h2 className="font-medium">Trade Data (HS Code Export/Import)</h2>
-          {(tradeRows ?? []).length > 0 && <ClearTradeDataButton countryName={country.name} />}
-        </div>
-        <p className="text-xs text-slate-400 mb-4">Upload a file to add trade records for {country.name} — rows where it appears as either the exporting or importing country.</p>
-        <TradeDataImport />
-      </div>
 
       <div className="mb-6">
         <CountryImportChart countryName={country.name} rows={(tradeRows ?? []) as any} />

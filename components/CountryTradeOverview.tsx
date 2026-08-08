@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import MultiSelectDropdown from "./MultiSelectDropdown";
 import ColumnFilterHeader from "./ColumnFilterHeader";
+import TradeDataImport from "./TradeDataImport";
+import ClearTradeDataButton from "./ClearTradeDataButton";
 
 type TradeRow = {
   id: string;
@@ -70,32 +71,35 @@ export default function CountryTradeOverview({ countryName, rows }: { countryNam
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <MultiSelectDropdown label="Year" options={years} selected={yearFilter} onChange={setYearFilter} />
-        <MultiSelectDropdown label="HS Code" options={hsCodes} selected={hsFilter} onChange={setHsFilter} />
-        <MultiSelectDropdown label="Product" options={products} selected={productFilter} onChange={setProductFilter} />
-        <MultiSelectDropdown label="Flow" options={["import", "export"]} selected={flowFilter} onChange={setFlowFilter} />
-        <MultiSelectDropdown label="Country" options={partnerCountries} selected={countryFilter} onChange={setCountryFilter} />
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-4">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+          <h3 className="font-medium text-sm">Trade Data (Export/Import)</h3>
+          {rows.length > 0 && <ClearTradeDataButton countryName={countryName} />}
+        </div>
+        <p className="text-xs text-slate-400 mb-3">Upload a file to add trade records for {countryName} — rows where it appears as either the exporting or importing country.</p>
+        <TradeDataImport />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
+      {/* Table wrapper keeps a minimum height so an open column filter
+          dropdown always has room, even when filtering leaves zero rows. */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm min-h-[220px]">
         <table className="w-full text-sm min-w-[800px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="Year" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "year" ? sortDir : null} onSort={(dir) => handleSort("year", dir)} />
+                <ColumnFilterHeader label="Year" options={years} selected={yearFilter} onChange={setYearFilter} sortDir={sortKey === "year" ? sortDir : null} onSort={(dir) => handleSort("year", dir)} />
               </th>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="Flow" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "flow" ? sortDir : null} onSort={(dir) => handleSort("flow", dir)} />
+                <ColumnFilterHeader label="Flow" options={["import", "export"]} selected={flowFilter} onChange={setFlowFilter} sortDir={sortKey === "flow" ? sortDir : null} onSort={(dir) => handleSort("flow", dir)} />
               </th>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="Partner Country" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "partner" ? sortDir : null} onSort={(dir) => handleSort("partner", dir)} />
+                <ColumnFilterHeader label="Partner Country" options={partnerCountries} selected={countryFilter} onChange={setCountryFilter} sortDir={sortKey === "partner" ? sortDir : null} onSort={(dir) => handleSort("partner", dir)} />
               </th>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="HS Code" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "hs_code" ? sortDir : null} onSort={(dir) => handleSort("hs_code", dir)} />
+                <ColumnFilterHeader label="HS Code" options={hsCodes} selected={hsFilter} onChange={setHsFilter} sortDir={sortKey === "hs_code" ? sortDir : null} onSort={(dir) => handleSort("hs_code", dir)} />
               </th>
               <th className="text-left px-3 py-2.5">
-                <ColumnFilterHeader label="Product" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "product" ? sortDir : null} onSort={(dir) => handleSort("product", dir)} />
+                <ColumnFilterHeader label="Product" options={products} selected={productFilter} onChange={setProductFilter} sortDir={sortKey === "product" ? sortDir : null} onSort={(dir) => handleSort("product", dir)} />
               </th>
               <th className="text-right px-3 py-2.5">
                 <ColumnFilterHeader label="Quantity" options={[]} selected={[]} onChange={() => {}} align="right" sortDir={sortKey === "quantity" ? sortDir : null} onSort={(dir) => handleSort("quantity", dir)} />
@@ -124,7 +128,7 @@ export default function CountryTradeOverview({ countryName, rows }: { countryNam
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center py-8 text-slate-400">
-                  No trade data yet — upload a file above
+                  No trade data matches the current filters
                 </td>
               </tr>
             )}
