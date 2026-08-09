@@ -115,7 +115,15 @@ const REPORTER_CODE_MAP: Record<string, string> = { EU27: "EU27_2020" };
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
   const reporterCode = REPORTER_CODE_MAP[reporter] ?? reporter;
   const key = `A.${reporterCode}.${iso2}.${cnCode}.${FLOW_EXPORT}.VALUE_EUR`;
-  const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV`;
+  // TIME_PERIOD was never being constrained at all — per Eurostat's own
+  // "Nota Bene for Period" note, this dataset doesn't accept a plain
+  // year: annual totals are coded 'YYYY52' (month totals are 'YYYYMM',
+  // e.g. '202512' = Dec 2025). Missing/malformed startPeriod-endPeriod is
+  // the most likely remaining cause of the HTTP 400s after the key itself
+  // was confirmed correct against the live DSD.
+  const endYear = CURRENT_YEAR - 1; // most recent likely-published full year
+  const startYear = CURRENT_YEAR - 5;
+  const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV&startPeriod=${startYear}52&endPeriod=${endYear}52`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} ${key}: HTTP ${res.status}`);
   const text = await res.text();
