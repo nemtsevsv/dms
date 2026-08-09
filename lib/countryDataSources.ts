@@ -114,7 +114,13 @@ const REPORTER_CODE_MAP: Record<string, string> = { EU27: "EU27_2020" };
 
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
   const reporterCode = REPORTER_CODE_MAP[reporter] ?? reporter;
-  const key = `A.${reporterCode}.${iso2}.${cnCode}.${FLOW_EXPORT}.VALUE_EUR`;
+  // DS-059341 is "International trade ... by HS2-4-6" — it only accepts
+  // product codes at the 2/4/6-digit HS level, not full 8-digit CN. The
+  // field itself still stores/displays the original 8-digit code (that's
+  // what the Data Dictionary specifies and what the other two datasets in
+  // scope use); only the outgoing query gets truncated.
+  const hs6Code = cnCode.slice(0, 6);
+  const key = `A.${reporterCode}.${iso2}.${hs6Code}.${FLOW_EXPORT}.VALUE_EUR`;
   // TIME_PERIOD was never being constrained at all — per Eurostat's own
   // "Nota Bene for Period" note, this dataset doesn't accept a plain
   // year: annual totals are coded 'YYYY52' (month totals are 'YYYYMM',
