@@ -47,11 +47,27 @@ export default function CountryDashboardRefreshButton({ iso2 }: { iso2: string }
         <div className="mt-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2 max-w-md">
           {result.error && <p className="text-red-600">{result.error}</p>}
           {result.summary && (
-            <>
-              <p>World Bank: {result.summary.worldBank.ok} ok, {result.summary.worldBank.failed} failed</p>
-              <p>GeoNames: {result.summary.geonames.ok} ok, {result.summary.geonames.failed} failed</p>
-              <p>Eurostat (experimental): {result.summary.eurostat.ok} ok, {result.summary.eurostat.failed} failed</p>
-            </>
+            <div className="space-y-2">
+              {(["worldBank", "geonames", "eurostat"] as const).map((src) => {
+                const s = result.summary[src];
+                const labels: Record<string, string> = { worldBank: "World Bank", geonames: "GeoNames", eurostat: "Eurostat (experimental)" };
+                return (
+                  <div key={src}>
+                    <p>
+                      {labels[src]}: {s.ok} ok, {s.failed} failed
+                    </p>
+                    {s.errors?.length > 0 && (
+                      <ul className="mt-0.5 pl-3 list-disc text-red-600">
+                        {s.errors.slice(0, 6).map((e: string, i: number) => (
+                          <li key={i}>{e}</li>
+                        ))}
+                        {s.errors.length > 6 && <li>...and {s.errors.length - 6} more</li>}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}

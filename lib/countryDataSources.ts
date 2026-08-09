@@ -36,7 +36,11 @@ const CURRENT_YEAR = new Date().getFullYear();
 // have a published (non-null) value — current-year figures are usually not
 // published yet, so we look back a wider window and keep only real data.
 export async function fetchWorldBankIndicator(iso2: string, indicator: string): Promise<YearValue[]> {
-  const url = `https://api.worldbank.org/v2/country/${iso2}/indicator/${indicator}?format=json&date=${CURRENT_YEAR - 6}:${CURRENT_YEAR}&per_page=20`;
+  // World Bank's own documented examples consistently use lowercase country
+  // codes (e.g. ".../country/br?format=json") — passing our stored
+  // uppercase ISO2 as-is risked silently matching nothing for some
+  // indicators while working for others.
+  const url = `https://api.worldbank.org/v2/country/${iso2.toLowerCase()}/indicator/${indicator}?format=json&date=${CURRENT_YEAR - 6}:${CURRENT_YEAR}&per_page=20`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`World Bank ${indicator} for ${iso2}: HTTP ${res.status}`);
   const json = await res.json();
@@ -58,7 +62,17 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`GeoNames for ${iso2}: HTTP ${res.status}`);
   const json = await res.json();
-  if (json.status) throw new Error(`GeoNames error: ${json.status.message ?? "unknown"}`);
+  if (json.status) {
+    const msg = json.status.message ?? "unknown";
+    // GeoNames' most common "it looks configured but nothing works" failure
+    // is that the account was registered but Free Web Services was never
+    // switched on — that's a separate manual step on geonames.org, not
+    // something the API key/username alone grants.
+    const hint = /user does not exist|not authorized|enable/i.test(msg)
+      ? " — check that 'Free Web Services' is enabled for this account at geonames.org/manageaccount"
+      : "";
+    throw new Error(`GeoNames error: ${msg}${hint}`);
+  }
   const results = Array.isArray(json.geonames) ? json.geonames : [];
   return results
     .map((r: any) => ({ name: r.name as string, population: Number(r.population) || 0 }))
