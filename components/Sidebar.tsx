@@ -15,6 +15,7 @@ import {
   Calendar,
   Megaphone,
   Globe,
+  Table2,
   Menu,
   X,
 } from "lucide-react";
@@ -53,6 +54,10 @@ const sections = [
       { href: "/products", label: "Products", icon: Package },
       { href: "/countries", label: "Countries", icon: Globe },
     ],
+  },
+  {
+    label: "Country Dashboard",
+    items: [{ href: "/country-dashboard", label: "Country Dashboard", icon: Table2 }],
   },
 ];
 

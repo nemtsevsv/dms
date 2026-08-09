@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pencil, X } from "lucide-react";
 import CountryForm from "./CountryForm";
+import UpdateFromWorldBankButton from "./UpdateFromWorldBankButton";
 
 function fmt(n: number | null, digits = 0) {
   if (n === null || n === undefined) return "—";
@@ -38,22 +39,25 @@ export default function CountryOverview({ country }: { country: any }) {
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h2 className="font-medium">Country Data</h2>
-        <button
-          onClick={() => setEditing((e) => !e)}
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50"
-        >
-          {editing ? (
-            <>
-              <X size={13} /> Close
-            </>
-          ) : (
-            <>
-              <Pencil size={13} /> Edit
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <UpdateFromWorldBankButton countryId={country.id} />
+          <button
+            onClick={() => setEditing((e) => !e)}
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50"
+          >
+            {editing ? (
+              <>
+                <X size={13} /> Close
+              </>
+            ) : (
+              <>
+                <Pencil size={13} /> Edit
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {editing ? (
