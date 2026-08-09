@@ -94,16 +94,23 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 }
 
 // ---------------- Eurostat Comext ----------------
-// EXPERIMENTAL — DS-059341 (from the original spec) returned HTTP 400 on a
-// live test for every CN8/reporter combination — either the dataset code
-// or the SDMX key structure doesn't match what it expects. Trying
-// DS-059322 ("EU trade since 2002 by HS2-4-6 and CN8") next — independent
-// sources describe it as the current standard Comext CN8 dataset. If this
-// also fails, the honest conclusion is that guessing the SDMX key
-// structure blind isn't working, and these 12 fields need either direct
-// input from Eurostat support or manual entry, same as the rest of the
-// legacy Countries data.
-const EUROSTAT_DATASET = "DS-059322";
+// EXPERIMENTAL — DS-059341 is confirmed correct (matches the official
+// dataset title "International trade of EU and non-EU countries since
+// 2002 by HS2-4-6"). The HTTP 400 on the first live test was most likely
+// the FLOW dimension: Comext encodes trade flow as a numeric code, not
+// text — found via a working example from the comRex R package (a
+// purpose-built Comext SDMX client) using flow="1". Comext's standard
+// convention is 1 = Import, 2 = Export.
+//
+// The remaining open question is the exact left-to-right dimension order
+// in the key — this key layout is a best-effort reconstruction, not
+// confirmed against the dataset's own structure definition (DSD). If this
+// still 400s, the definitive next step is to fetch the DSD directly:
+// https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/datastructure/ESTAT/DS-059341
+// — that returns the dataset's real dimension list and order, removing
+// all guesswork, but requires live network access to fetch and read.
+const EUROSTAT_DATASET = "DS-059341";
+const FLOW_EXPORT = "2";
 
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
   // SDMX 2.1 positional key — dimension order confirmed from Eurostat's own
@@ -111,7 +118,7 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
   // key layout for DS-059341 specifically is the part that needs a live
   // test; if the dimension order or dataset code is wrong, this will throw
   // and the caller will record it as a failed field rather than bad data.
-  const key = `A.${reporter}.${iso2}.${cnCode}.EXP.VALUE_EUR`;
+  const key = `A.${reporter}.${iso2}.${cnCode}.${FLOW_EXPORT}.VALUE_EUR`;
   const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} ${key}: HTTP ${res.status}`);
