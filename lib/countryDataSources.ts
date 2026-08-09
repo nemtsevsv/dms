@@ -41,16 +41,29 @@ export async function fetchWorldBankIndicator(iso2: string, indicator: string): 
   // uppercase ISO2 as-is risked silently matching nothing for some
   // indicators while working for others.
   const url = `https://api.worldbank.org/v2/country/${iso2.toLowerCase()}/indicator/${indicator}?format=json&date=${CURRENT_YEAR - 6}:${CURRENT_YEAR}&per_page=20`;
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`World Bank ${indicator} for ${iso2}: HTTP ${res.status}`);
-  const json = await res.json();
-  const rows = Array.isArray(json) ? json[1] : null;
-  if (!Array.isArray(rows)) return [];
-  return rows
-    .filter((r: any) => r.value !== null && r.value !== undefined)
-    .map((r: any) => ({ year: Number(r.date), value: Number(r.value) }))
-    .sort((a, b) => b.year - a.year)
-    .slice(0, 3);
+
+  // One retry on failure — in practice, isolated HTTP errors on this API
+  // have shown up as transient (one bad response among several identical
+  // parallel calls), not a permanent problem with the indicator or country.
+  let lastError: any;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) throw new Error(`World Bank ${indicator} for ${iso2}: HTTP ${res.status}`);
+      const json = await res.json();
+      const rows = Array.isArray(json) ? json[1] : null;
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .filter((r: any) => r.value !== null && r.value !== undefined)
+        .map((r: any) => ({ year: Number(r.date), value: Number(r.value) }))
+        .sort((a, b) => b.year - a.year)
+        .slice(0, 3);
+    } catch (e) {
+      lastError = e;
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  throw lastError;
 }
 
 // ---------------- GeoNames ----------------
@@ -81,12 +94,16 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 }
 
 // ---------------- Eurostat Comext ----------------
-// EXPERIMENTAL — per the pre-build spike, the exact dataset code and
-// response shape for Comext CN8 export data could not be fully verified
-// without live network access. This function is intentionally isolated so
-// a failure here never blocks World Bank / GeoNames data from saving.
-// If DS-059341 turns out to be wrong/retired, try DS-059322 next.
-const EUROSTAT_DATASET = "DS-059341";
+// EXPERIMENTAL — DS-059341 (from the original spec) returned HTTP 400 on a
+// live test for every CN8/reporter combination — either the dataset code
+// or the SDMX key structure doesn't match what it expects. Trying
+// DS-059322 ("EU trade since 2002 by HS2-4-6 and CN8") next — independent
+// sources describe it as the current standard Comext CN8 dataset. If this
+// also fails, the honest conclusion is that guessing the SDMX key
+// structure blind isn't working, and these 12 fields need either direct
+// input from Eurostat support or manual entry, same as the rest of the
+// legacy Countries data.
+const EUROSTAT_DATASET = "DS-059322";
 
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
   // SDMX 2.1 positional key — dimension order confirmed from Eurostat's own
