@@ -94,31 +94,27 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 }
 
 // ---------------- Eurostat Comext ----------------
-// EXPERIMENTAL — DS-059341 is confirmed correct (matches the official
-// dataset title "International trade of EU and non-EU countries since
-// 2002 by HS2-4-6"). The HTTP 400 on the first live test was most likely
-// the FLOW dimension: Comext encodes trade flow as a numeric code, not
-// text — found via a working example from the comRex R package (a
-// purpose-built Comext SDMX client) using flow="1". Comext's standard
-// convention is 1 = Import, 2 = Export.
-//
-// The remaining open question is the exact left-to-right dimension order
-// in the key — this key layout is a best-effort reconstruction, not
-// confirmed against the dataset's own structure definition (DSD). If this
-// still 400s, the definitive next step is to fetch the DSD directly:
-// https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/datastructure/ESTAT/DS-059341
-// — that returns the dataset's real dimension list and order, removing
-// all guesswork, but requires live network access to fetch and read.
+// CONFIRMED against DS-059341's real Data Structure Definition (see
+// fetchEurostatExport below for the full breakdown of what that
+// confirmed). This is no longer a guess.
 const EUROSTAT_DATASET = "DS-059341";
-const FLOW_EXPORT = "2";
+const FLOW_EXPORT = "2"; // Comext's CXT_EU_FLUX codelist: 1=Import, 2=Export, 3=Re-export
+
+// Confirmed against DS-059341's own Data Structure Definition (fetched via
+// the /api/country-dashboard/eurostat-dsd diagnostic route): dimension
+// order is freq.reporter.partner.product.flow.indicators (exactly what was
+// already being sent), flow is numeric (1=Import, 2=Export — already
+// fixed), and VALUE_EUR is a real code in the CXT_INDICATORS codelist.
+// The one remaining mismatch: our own field config uses the readable
+// reporter code 'EU27' for field keys/labels, but Comext's actual
+// codelist (CXT_FREE_ISO) has no plain 'EU27' — the EU aggregate is coded
+// 'EU27_2020'. Translated here, at the query boundary, so stored field
+// keys/labels stay clean.
+const REPORTER_CODE_MAP: Record<string, string> = { EU27: "EU27_2020" };
 
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
-  // SDMX 2.1 positional key — dimension order confirmed from Eurostat's own
-  // documented example (A.<reporter>.<partner>...<indicator>). This exact
-  // key layout for DS-059341 specifically is the part that needs a live
-  // test; if the dimension order or dataset code is wrong, this will throw
-  // and the caller will record it as a failed field rather than bad data.
-  const key = `A.${reporter}.${iso2}.${cnCode}.${FLOW_EXPORT}.VALUE_EUR`;
+  const reporterCode = REPORTER_CODE_MAP[reporter] ?? reporter;
+  const key = `A.${reporterCode}.${iso2}.${cnCode}.${FLOW_EXPORT}.VALUE_EUR`;
   const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} ${key}: HTTP ${res.status}`);

@@ -15,7 +15,7 @@ export type CountryField = {
   wbIndicator?: string;
   // Eurostat Comext
   cnCode?: string;
-  reporter?: string; // 'EU27' | 'DE' | 'AT'
+  reporter?: string; // 'EU27_2020' | 'DE' | 'AT' — Comext's actual codelist (CXT_FREE_ISO) uses 'EU27_2020' for the EU aggregate, not a plain 'EU27'
 };
 
 export const WORLD_BANK_FIELDS: CountryField[] = [
