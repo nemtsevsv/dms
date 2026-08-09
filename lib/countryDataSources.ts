@@ -116,7 +116,7 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 //     dataset requires an explicit period filter — it does not default to
 //     "everything" or "latest" on its own.
 const EUROSTAT_DATASET = "DS-059341";
-const EUROSTAT_DATAFLOW_VERSION = "1.0"; // dataflows/content-constraints always default to 1.0, independent of the DSD's own version
+const EUROSTAT_DATAFLOW_VERSION = "+"; // Eurostat's own docs: "'1.0' or '+' (meaning latest) can be used interchangeably" for unversioned artefacts like Dataflow — using '+' removes any risk that Comext's dataflow version isn't actually 1.0
 const FLOW_EXPORT = "2";
 const REPORTER_CODE_MAP: Record<string, string> = { EU27: "EU27_2020" };
 
@@ -141,7 +141,15 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
 
   const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/3.0/data/dataflow/ESTAT/${EUROSTAT_DATASET}/${EUROSTAT_DATAFLOW_VERSION}?${params.toString()}`;
   const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} (SDMX 3.0) reporter=${reporterCode} partner=${iso2} product=${hs6Code}: HTTP ${res.status}`);
+  if (!res.ok) {
+    // Eurostat's error responses usually explain exactly what's wrong —
+    // surfacing that text is far more useful than the bare status code,
+    // which is all we've had to go on until now.
+    const bodyText = await res.text().catch(() => "");
+    throw new Error(
+      `Eurostat ${EUROSTAT_DATASET} (SDMX 3.0) reporter=${reporterCode} partner=${iso2} product=${hs6Code}: HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 300)}` : ""}`
+    );
+  }
   const text = await res.text();
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
