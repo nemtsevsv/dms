@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
 
-  const url = "https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/datastructure/ESTAT/DS-059341?references=children";
+  const url = "https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/3.0/structure/datastructure/ESTAT/DS-059341/+?references=children&compress=false";
   try {
     const res = await fetch(url, { cache: "no-store" });
     const text = await res.text();

@@ -94,51 +94,61 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 }
 
 // ---------------- Eurostat Comext ----------------
-// CONFIRMED against DS-059341's real Data Structure Definition (see
-// fetchEurostatExport below for the full breakdown of what that
-// confirmed). This is no longer a guess.
+// Switched to the SDMX 3.0 API (component-value filtering) per Eurostat's
+// own guide: https://ec.europa.eu/eurostat/web/user-guides/data-browser/api-data-access/api-getting-started/sdmx3.0
+// This replaces the earlier SDMX 2.1 positional-key approach — component
+// filters (`c[dim_id]=value`) are case-insensitive, don't depend on
+// getting dimension order exactly right, and each dimension's filter is
+// independent of the others, which made this dataset's real requirements
+// far easier to nail down:
+//   - dataset DS-059341 ("International trade of EU and non-EU countries
+//     since 2002 by HS2-4-6") — confirmed correct
+//   - dimension ids (confirmed against the dataset's own DSD): freq,
+//     reporter, partner, product, flow, indicators, TIME_PERIOD
+//   - flow is numeric: 1 = Import, 2 = Export (CXT_EU_FLUX codelist)
+//   - indicators: VALUE_EUR for trade value in EUR
+//   - reporter 'EU27' isn't a real code — the EU aggregate is 'EU27_2020'
+//   - product is HS2-4-6 only — an 8-digit CN code must be truncated to
+//     its first 6 digits
+//   - TIME_PERIOD has no plain-year form: annual totals are coded
+//     'YYYY52' (month totals are 'YYYYMM', e.g. '202512' = Dec 2025),
+//     confirmed via Eurostat's own "Nota Bene for Period" note, and the
+//     dataset requires an explicit period filter — it does not default to
+//     "everything" or "latest" on its own.
 const EUROSTAT_DATASET = "DS-059341";
-const FLOW_EXPORT = "2"; // Comext's CXT_EU_FLUX codelist: 1=Import, 2=Export, 3=Re-export
-
-// Confirmed against DS-059341's own Data Structure Definition (fetched via
-// the /api/country-dashboard/eurostat-dsd diagnostic route): dimension
-// order is freq.reporter.partner.product.flow.indicators (exactly what was
-// already being sent), flow is numeric (1=Import, 2=Export — already
-// fixed), and VALUE_EUR is a real code in the CXT_INDICATORS codelist.
-// The one remaining mismatch: our own field config uses the readable
-// reporter code 'EU27' for field keys/labels, but Comext's actual
-// codelist (CXT_FREE_ISO) has no plain 'EU27' — the EU aggregate is coded
-// 'EU27_2020'. Translated here, at the query boundary, so stored field
-// keys/labels stay clean.
+const EUROSTAT_DATAFLOW_VERSION = "1.0"; // dataflows/content-constraints always default to 1.0, independent of the DSD's own version
+const FLOW_EXPORT = "2";
 const REPORTER_CODE_MAP: Record<string, string> = { EU27: "EU27_2020" };
 
 export async function fetchEurostatExport(iso2: string, cnCode: string, reporter: string): Promise<YearValue[]> {
   const reporterCode = REPORTER_CODE_MAP[reporter] ?? reporter;
-  // DS-059341 is "International trade ... by HS2-4-6" — it only accepts
-  // product codes at the 2/4/6-digit HS level, not full 8-digit CN. The
-  // field itself still stores/displays the original 8-digit code (that's
-  // what the Data Dictionary specifies and what the other two datasets in
-  // scope use); only the outgoing query gets truncated.
   const hs6Code = cnCode.slice(0, 6);
-  const key = `A.${reporterCode}.${iso2}.${hs6Code}.${FLOW_EXPORT}.VALUE_EUR`;
-  // TIME_PERIOD was never being constrained at all — per Eurostat's own
-  // "Nota Bene for Period" note, this dataset doesn't accept a plain
-  // year: annual totals are coded 'YYYY52' (month totals are 'YYYYMM',
-  // e.g. '202512' = Dec 2025). Missing/malformed startPeriod-endPeriod is
-  // the most likely remaining cause of the HTTP 400s after the key itself
-  // was confirmed correct against the live DSD.
   const endYear = CURRENT_YEAR - 1; // most recent likely-published full year
   const startYear = CURRENT_YEAR - 5;
-  const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV&startPeriod=${startYear}52&endPeriod=${endYear}52`;
+
+  const params = new URLSearchParams({
+    "c[freq]": "A",
+    "c[reporter]": reporterCode,
+    "c[partner]": iso2,
+    "c[product]": hs6Code,
+    "c[flow]": FLOW_EXPORT,
+    "c[indicators]": "VALUE_EUR",
+    "c[TIME_PERIOD]": `ge:${startYear}52+le:${endYear}52`,
+    format: "csvdata",
+    formatVersion: "2.0",
+    compress: "false",
+  });
+
+  const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/3.0/data/dataflow/ESTAT/${EUROSTAT_DATASET}/${EUROSTAT_DATAFLOW_VERSION}?${params.toString()}`;
   const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} ${key}: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} (SDMX 3.0) reporter=${reporterCode} partner=${iso2} product=${hs6Code}: HTTP ${res.status}`);
   const text = await res.text();
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
   const header = lines[0].split(",");
   const timeIdx = header.indexOf("TIME_PERIOD");
   const valueIdx = header.indexOf("OBS_VALUE");
-  if (timeIdx === -1 || valueIdx === -1) throw new Error("Eurostat response shape unexpected — no TIME_PERIOD/OBS_VALUE columns");
+  if (timeIdx === -1 || valueIdx === -1) throw new Error(`Eurostat response shape unexpected — columns were: ${header.join(", ")}`);
   const byYear = new Map<number, number>();
   for (const line of lines.slice(1)) {
     const cols = line.split(",");
