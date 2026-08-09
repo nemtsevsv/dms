@@ -18,7 +18,13 @@ export default function UpdateFromWorldBankButton({ countryId }: { countryId: st
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ countryId }),
       });
-      const json = await res.json();
+      const text = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = { error: `Server returned an unexpected response (HTTP ${res.status}): ${text.slice(0, 200)}` };
+      }
       if (!res.ok) setError(json.error ?? "Update failed");
       else router.refresh();
     } catch (e: any) {

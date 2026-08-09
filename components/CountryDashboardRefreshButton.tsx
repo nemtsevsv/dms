@@ -18,7 +18,13 @@ export default function CountryDashboardRefreshButton({ iso2 }: { iso2: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ iso2 }),
       });
-      const json = await res.json();
+      const text = await res.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = { error: `Server returned an unexpected response (HTTP ${res.status}): ${text.slice(0, 200)}` };
+      }
       setResult(json);
       router.refresh();
     } catch (e: any) {

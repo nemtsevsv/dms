@@ -2,8 +2,30 @@
 // returns a clean, typed result and never throws past its own boundary;
 // callers decide how to handle a source being unavailable (World Bank and
 // GeoNames are expected to be reliable; Eurostat is explicitly best-effort
-// per the spike findings — dataset code / response shape may need
-// adjustment once tested against the live API from a deployed environment).
+// — dataset code / response shape may still need adjustment once tested
+// live).
+//
+// Every fetch has an explicit timeout. Without one, a single slow or
+// unresponsive external call can hang indefinitely and drag the whole
+// serverless function past its execution limit — which is what was
+// happening: the platform then returns its own plain-text/HTML error page
+// instead of JSON, which is why the client saw "Unexpected token... is not
+// valid JSON" rather than a real error message.
+
+const FETCH_TIMEOUT_MS = 8000;
+
+async function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { cache: "no-store", signal: controller.signal });
+  } catch (e: any) {
+    if (e.name === "AbortError") throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export type YearValue = { year: number; value: number };
 
@@ -15,7 +37,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 // published yet, so we look back a wider window and keep only real data.
 export async function fetchWorldBankIndicator(iso2: string, indicator: string): Promise<YearValue[]> {
   const url = `https://api.worldbank.org/v2/country/${iso2}/indicator/${indicator}?format=json&date=${CURRENT_YEAR - 6}:${CURRENT_YEAR}&per_page=20`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`World Bank ${indicator} for ${iso2}: HTTP ${res.status}`);
   const json = await res.json();
   const rows = Array.isArray(json) ? json[1] : null;
@@ -33,7 +55,7 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
   const username = process.env.GEONAMES_USERNAME;
   if (!username) throw new Error("GEONAMES_USERNAME is not configured");
   const url = `https://secure.geonames.org/searchJSON?country=${iso2}&featureClass=P&orderby=population&maxRows=5&username=${encodeURIComponent(username)}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`GeoNames for ${iso2}: HTTP ${res.status}`);
   const json = await res.json();
   if (json.status) throw new Error(`GeoNames error: ${json.status.message ?? "unknown"}`);
@@ -60,7 +82,7 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
   // and the caller will record it as a failed field rather than bad data.
   const key = `A.${reporter}.${iso2}.${cnCode}.EXP.VALUE_EUR`;
   const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/${EUROSTAT_DATASET}/${key}?format=SDMX-CSV`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Eurostat ${EUROSTAT_DATASET} ${key}: HTTP ${res.status}`);
   const text = await res.text();
   const lines = text.trim().split("\n");
