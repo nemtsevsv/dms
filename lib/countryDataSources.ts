@@ -110,11 +110,14 @@ export async function fetchGeoNamesTopCities(iso2: string): Promise<{ name: stri
 //   - reporter 'EU27' isn't a real code — the EU aggregate is 'EU27_2020'
 //   - product is HS2-4-6 only — an 8-digit CN code must be truncated to
 //     its first 6 digits
-//   - TIME_PERIOD has no plain-year form: annual totals are coded
-//     'YYYY52' (month totals are 'YYYYMM', e.g. '202512' = Dec 2025),
-//     confirmed via Eurostat's own "Nota Bene for Period" note, and the
-//     dataset requires an explicit period filter — it does not default to
-//     "everything" or "latest" on its own.
+//   - TIME_PERIOD in the SDMX 3.0 component filter (c[TIME_PERIOD]) takes
+//     plain years ('2020', not '202052') — the 'YYYY52' annual-total code
+//     turned out to be specific to Comext's legacy bulk CSV file format
+//     (documented in their "Nota Bene for Period" note), not the SDMX 3.0
+//     REST filter syntax. Confirmed by Eurostat's own error response:
+//     every other dimension (freq/reporter/partner/product/flow/
+//     indicators) was accepted; TIME_PERIOD_FILTER_SPEC_INVALID was the
+//     only complaint, and only the period value format changed here.
 const EUROSTAT_DATASET = "DS-059341";
 const EUROSTAT_DATAFLOW_VERSION = "+"; // Eurostat's own docs: "'1.0' or '+' (meaning latest) can be used interchangeably" for unversioned artefacts like Dataflow — using '+' removes any risk that Comext's dataflow version isn't actually 1.0
 const FLOW_EXPORT = "2";
@@ -133,7 +136,7 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
     "c[product]": hs6Code,
     "c[flow]": FLOW_EXPORT,
     "c[indicators]": "VALUE_EUR",
-    "c[TIME_PERIOD]": `ge:${startYear}52+le:${endYear}52`,
+    "c[TIME_PERIOD]": `ge:${startYear}+le:${endYear}`,
     format: "csvdata",
     formatVersion: "2.0",
     compress: "false",
