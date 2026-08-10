@@ -154,15 +154,21 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
     );
   }
   const text = await res.text();
-  const lines = text.trim().split("\n");
+  // Split on \r\n or \n — Windows-style line endings otherwise leave a
+  // stray \r attached to the last field of every line (here, OBS_VALUE),
+  // which silently breaks an exact string match against "OBS_VALUE" even
+  // though the column is genuinely present. That's what "response shape
+  // unexpected" turned out to be: not a missing column, just this.
+  const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const header = lines[0].split(",");
+  const clean = (cell: string) => cell.trim().replace(/^"|"$/g, "");
+  const header = lines[0].split(",").map(clean);
   const timeIdx = header.indexOf("TIME_PERIOD");
   const valueIdx = header.indexOf("OBS_VALUE");
   if (timeIdx === -1 || valueIdx === -1) throw new Error(`Eurostat response shape unexpected — columns were: ${header.join(", ")}`);
   const byYear = new Map<number, number>();
   for (const line of lines.slice(1)) {
-    const cols = line.split(",");
+    const cols = line.split(",").map(clean);
     const period = cols[timeIdx];
     const val = Number(cols[valueIdx]);
     if (!period || Number.isNaN(val)) continue;
