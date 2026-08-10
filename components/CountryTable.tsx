@@ -34,7 +34,9 @@ function fmtMio(n: number | null) {
 
 type SortKey = "name" | "capital" | "population" | "gdp" | "gdp_per_capita" | "gdp_ppp" | "gdp_ppp_per_capita" | "hnwi" | "vat";
 
-export default function CountryTable({ countries }: { countries: Country[] }) {
+type DealerCounts = { active: number; potential: number };
+
+export default function CountryTable({ countries, dealerCounts }: { countries: Country[]; dealerCounts: Record<string, DealerCounts> }) {
   const [search, setSearch] = useState("");
   const [capitalFilter, setCapitalFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -96,8 +98,9 @@ export default function CountryTable({ countries }: { countries: Country[] }) {
           <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase">
             <tr>
               <th className="text-left px-2 py-2">
-                <ColumnFilterHeader label="Name" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "name" ? sortDir : null} onSort={(dir) => handleSort("name", dir)} />
+                <ColumnFilterHeader label="Country" options={[]} selected={[]} onChange={() => {}} sortDir={sortKey === "name" ? sortDir : null} onSort={(dir) => handleSort("name", dir)} />
               </th>
+              <th className="text-center px-2 py-2 bg-amber-50">Dealers (active/potential)</th>
               <th className="text-left px-2 py-2">
                 <ColumnFilterHeader label="Capital" options={capitals} selected={capitalFilter} onChange={setCapitalFilter} sortDir={sortKey === "capital" ? sortDir : null} onSort={(dir) => handleSort("capital", dir)} />
               </th>
@@ -133,6 +136,9 @@ export default function CountryTable({ countries }: { countries: Country[] }) {
                     {c.name}
                   </Link>
                 </td>
+                <td className="px-2 py-1.5 text-center whitespace-nowrap bg-amber-50 font-medium text-slate-700">
+                  {dealerCounts[c.name]?.active ?? 0} / {dealerCounts[c.name]?.potential ?? 0}
+                </td>
                 <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">{c.capital ?? "—"}</td>
                 <td className="px-2 py-1.5 text-slate-500 max-w-[100px] truncate" title={c.biggest_cities ?? undefined}>
                   {c.biggest_cities ?? "—"}
@@ -148,7 +154,7 @@ export default function CountryTable({ countries }: { countries: Country[] }) {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center py-8 text-slate-400">
+                <td colSpan={11} className="text-center py-8 text-slate-400">
                   No countries found
                 </td>
               </tr>

@@ -99,7 +99,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ savedRows: rowsToInsert.length, summary });
+    // Returning the freshly fetched values themselves (not just the ok/failed
+    // summary) lets a caller display them immediately, without a second
+    // round trip to read them back out of country_data_points.
+    const points = rowsToInsert.map((r) => ({ data_field: r.data_field, year: r.year, value: r.value, text_value: r.text_value }));
+
+    return NextResponse.json({ savedRows: rowsToInsert.length, summary, points });
   } catch (e: any) {
     // Last-resort catch-all — guarantees the client always gets valid JSON
     // back, even for a genuinely unexpected failure.

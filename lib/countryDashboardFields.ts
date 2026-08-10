@@ -3,7 +3,7 @@
 // new field means adding one entry here; nothing else in the app hardcodes
 // the field list.
 
-export type FieldSource = "worldbank" | "geonames" | "eurostat";
+export type FieldSource = "worldbank" | "geonames" | "eurostat" | "manual";
 
 export type CountryField = {
   key: string; // stable key stored in country_data_points.data_field
@@ -58,7 +58,15 @@ export const EUROSTAT_FIELDS: CountryField[] = EUROSTAT_COMBOS.map((c) => ({
   reporter: c.reporter,
 }));
 
-export const ALL_COUNTRY_FIELDS: CountryField[] = [...WORLD_BANK_FIELDS, ...GEONAMES_FIELDS, ...EUROSTAT_FIELDS];
+// No data source defined for these two in the Data Dictionary — shown as
+// permanently-empty rows to match the reference layout exactly, same as
+// every other field this dashboard shows. Never populated by any fetch.
+export const MANUAL_FIELDS: CountryField[] = [
+  { key: "gdp_ppp", label: "GDP PPP", unit: "USD", source: "manual" },
+  { key: "ppp_per_capita", label: "PPP per Capita", unit: "USD/person", source: "manual" },
+];
+
+export const ALL_COUNTRY_FIELDS: CountryField[] = [...WORLD_BANK_FIELDS, ...MANUAL_FIELDS, ...GEONAMES_FIELDS, ...EUROSTAT_FIELDS];
 
 export function getField(key: string): CountryField | undefined {
   return ALL_COUNTRY_FIELDS.find((f) => f.key === key);

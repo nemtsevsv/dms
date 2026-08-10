@@ -1,24 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
-import CountryDashboardList from "@/components/CountryDashboardList";
-import CountryDashboardBulkRefresh from "@/components/CountryDashboardBulkRefresh";
+import CountryDashboardApp from "@/components/CountryDashboardApp";
 
 export const dynamic = "force-dynamic";
 
 export default async function CountryDashboardPage() {
   const supabase = createClient();
-  const { data: countries } = await supabase.from("country_master").select("iso2, country_en, capital, continent_en").order("country_en");
+  const { data: countries } = await supabase
+    .from("country_master")
+    .select("iso2, country_en, country_de, continent_en, continent_de, languages_en, languages_de, language_codes, capital, currency, official_languages, regional_official_languages")
+    .order("country_en");
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <h1 className="text-xl font-semibold">Country Dashboard</h1>
-        <CountryDashboardBulkRefresh countries={countries ?? []} />
-      </div>
-      <p className="text-xs text-slate-400 mb-4">
-        Standardized facts only, retrieved from World Bank, GeoNames and Eurostat Comext. No scoring, no recommendations — select a country to see its data.
+      <h1 className="text-xl font-semibold mb-1">Country Dashboard</h1>
+      <p className="text-xs text-slate-400 mb-6">
+        Select a country to see its data — standardized facts only, from Country_Master_Extended_Filled and live data sources. No scoring, no comparisons, no export.
       </p>
-      <CountryDashboardList countries={countries ?? []} />
+      <CountryDashboardApp countries={countries ?? []} />
     </AppShell>
   );
 }

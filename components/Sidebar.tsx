@@ -26,6 +26,7 @@ const sections = [
     label: "Dealers",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/countries", label: "Region", icon: Globe },
       { href: "/dealers", label: "Dealers", icon: Building2 },
       { href: "/orders", label: "Orders", icon: ShoppingCart },
       { href: "/tasks", label: "Tasks", icon: ListTodo },
@@ -50,10 +51,7 @@ const sections = [
   },
   {
     label: "",
-    items: [
-      { href: "/products", label: "Products", icon: Package },
-      { href: "/countries", label: "Countries", icon: Globe },
-    ],
+    items: [{ href: "/products", label: "Products", icon: Package }],
   },
   {
     label: "Country Dashboard",
