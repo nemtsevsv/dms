@@ -210,7 +210,7 @@ export async function fetchEurostatExportForYears(partnerIso2: string, reporterI
   const res = await fetchWithTimeout(url);
   if (!res.ok) {
     const bodyText = await res.text().catch(() => "");
-    throw new Error(`Eurostat ${EUROSTAT_DATASET} reporter=${reporterIso2} partner=${partnerIso2} product=${hs6Code}: HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 200)}` : ""}`);
+    throw new Error(`Eurostat ${EUROSTAT_DATASET} reporter=${reporterIso2} partner=${partnerIso2} product=${hs6Code}: HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 500)}` : ""}`);
   }
   const text = await res.text();
   const lines = text.trim().split(/\r?\n/);

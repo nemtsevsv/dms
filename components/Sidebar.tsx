@@ -51,11 +51,10 @@ const sections = [
   },
   {
     label: "",
-    items: [{ href: "/products", label: "Products", icon: Package }],
-  },
-  {
-    label: "Country Dashboard",
-    items: [{ href: "/country-dashboard", label: "Country Dashboard", icon: Table2 }],
+    items: [
+      { href: "/products", label: "Products", icon: Package },
+      { href: "/country-dashboard", label: "Country Dashboard", icon: Table2 },
+    ],
   },
 ];
 
