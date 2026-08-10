@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Each indicator call has its own timeout (in fetchWorldBankIndicator)
     // and Promise.allSettled means one slow/failing indicator can't take
     // the other four down with it or leave the request hanging.
-    const indicators = ["AG.SRF.TOTL.K2", "SP.POP.TOTL", "SP.POP.GROW", "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG"];
+    const indicators = ["AG.SRF.TOTL.K2", "SP.POP.TOTL", "SP.POP.GROW", "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG", "SP.URB.TOTL.IN.ZS"];
     const results = await Promise.allSettled(indicators.map((code) => fetchWorldBankIndicator(master.iso2, code)));
 
     const latest = (i: number) => {
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       population_growth_rate: latest(2),
       gdp: latest(3),
       gdp_growth_rate: latest(4),
+      urban_population_pct: latest(5),
       updated_at: new Date().toISOString(),
     };
 

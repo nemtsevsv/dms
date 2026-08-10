@@ -26,6 +26,7 @@ export default function CountryForm({ country, onSaved }: { country?: any; onSav
     gdp_ppp: country?.gdp_ppp ?? "",
     gdp_ppp_growth_rate: country?.gdp_ppp_growth_rate ?? "",
     vat: country?.vat ?? "",
+    urban_population_pct: country?.urban_population_pct ?? "",
     hnwi: country?.hnwi ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,7 @@ export default function CountryForm({ country, onSaved }: { country?: any; onSav
       gdp_ppp: gdpPpp,
       gdp_ppp_growth_rate: num(form.gdp_ppp_growth_rate),
       vat: num(form.vat),
+      urban_population_pct: num(form.urban_population_pct),
       hnwi,
     };
 
@@ -155,6 +157,10 @@ export default function CountryForm({ country, onSaved }: { country?: any; onSav
         <div>
           <label className={labelCls}>VAT (%)</label>
           <input type="number" step="0.1" className={inputCls} value={form.vat} onChange={(e) => update("vat", e.target.value)} />
+        </div>
+        <div>
+          <label className={labelCls}>Urban Population (%)</label>
+          <input type="number" step="0.1" className={inputCls} value={form.urban_population_pct} onChange={(e) => update("urban_population_pct", e.target.value)} />
         </div>
       </div>
 

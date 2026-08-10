@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, X } from "lucide-react";
 import CountryForm from "./CountryForm";
 import UpdateFromWorldBankButton from "./UpdateFromWorldBankButton";
+import UpdateCitiesButton from "./UpdateCitiesButton";
 
 function fmt(n: number | null, digits = 0) {
   if (n === null || n === undefined) return "—";
@@ -43,6 +44,7 @@ export default function CountryOverview({ country }: { country: any }) {
         <h2 className="font-medium">Country Data</h2>
         <div className="flex items-center gap-2">
           <UpdateFromWorldBankButton countryId={country.id} />
+          <UpdateCitiesButton countryId={country.id} />
           <button
             onClick={() => setEditing((e) => !e)}
             className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50"
@@ -67,11 +69,12 @@ export default function CountryOverview({ country }: { country: any }) {
       ) : (
         <div className="space-y-4">
           {/* Block 1 — identity */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <StatCard label="Capital" value={country.capital || "—"} />
             <StatCard label="Biggest Cities" value={country.biggest_cities || "—"} />
             <StatCard label="Area" value={country.area ? `${fmt(country.area)} km²` : "—"} />
             <StatCard label="Population" value={fmt(country.population)} sub={growthLabel(country.population_growth_rate)} />
+            <StatCard label="Urban Population" value={country.urban_population_pct !== null && country.urban_population_pct !== undefined ? `${country.urban_population_pct}%` : "—"} />
           </div>
 
           {/* Block 2 — economy */}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import ColumnFilterHeader from "./ColumnFilterHeader";
 import TradeDataImport from "./TradeDataImport";
 import ClearTradeDataButton from "./ClearTradeDataButton";
+import LoadFromEurostatButton from "./LoadFromEurostatButton";
 
 type TradeRow = {
   id: string;
@@ -20,7 +21,7 @@ type TradeRow = {
 
 type SortKey = "year" | "flow" | "partner" | "hs_code" | "product" | "quantity" | "value";
 
-export default function CountryTradeOverview({ countryName, rows }: { countryName: string; rows: TradeRow[] }) {
+export default function CountryTradeOverview({ countryId, countryName, rows }: { countryId: string; countryName: string; rows: TradeRow[] }) {
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [hsFilter, setHsFilter] = useState<string[]>([]);
   const [productFilter, setProductFilter] = useState<string[]>([]);
@@ -74,6 +75,7 @@ export default function CountryTradeOverview({ countryName, rows }: { countryNam
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-4">
         <div className="flex items-center gap-3 flex-wrap">
           <TradeDataImport />
+          <LoadFromEurostatButton countryId={countryId} />
           {rows.length > 0 && <ClearTradeDataButton countryName={countryName} />}
         </div>
         <p className="text-xs text-slate-400 mt-2">

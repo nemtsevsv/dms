@@ -11,8 +11,8 @@ type MonthData = { label: string; date: Date; target: number; actual: number; tr
 const BAND_TOP = 20;
 const BAND_BOTTOM = 70;
 
-export default function MonthlyTargetActualChart({ data }: { data: MonthData[] }) {
-  const ready = data.map((d) => isMonthDataReady(d.date));
+export default function MonthlyTargetActualChart({ data, readyFn = isMonthDataReady }: { data: MonthData[]; readyFn?: (d: Date) => boolean }) {
+  const ready = data.map((d) => readyFn(d.date));
   const maxBar = Math.max(...data.map((d) => Math.max(d.target, d.actual)), 1);
   const trafficValues = data.filter((_, i) => ready[i]).map((d) => d.traffic);
   const minTraffic = Math.min(...trafficValues, 0);
@@ -66,25 +66,23 @@ export default function MonthlyTargetActualChart({ data }: { data: MonthData[] }
           {data.map((d, i) => (
             <div key={d.label} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
               <div className="flex items-end gap-0.5 h-full w-full justify-center">
+                <div className="flex flex-col items-center justify-end h-full">
+                  {d.target > 0 && <span className="text-[8px] text-slate-500 mb-0.5 whitespace-nowrap">{formatThousandsRoundUp(d.target)}</span>}
+                  <div
+                    className="w-2 sm:w-2.5 bg-slate-300 rounded-t"
+                    style={{ height: `${(d.target / maxBar) * 100}%` }}
+                    title={`Target: ${Math.round(d.target).toLocaleString("de-DE")} EUR`}
+                  />
+                </div>
                 {ready[i] && (
-                  <>
-                    <div className="flex flex-col items-center justify-end h-full">
-                      {d.target > 0 && <span className="text-[8px] text-slate-500 mb-0.5 whitespace-nowrap">{formatThousandsRoundUp(d.target)}</span>}
-                      <div
-                        className="w-2 sm:w-2.5 bg-slate-300 rounded-t"
-                        style={{ height: `${(d.target / maxBar) * 100}%` }}
-                        title={`Target: ${Math.round(d.target).toLocaleString("de-DE")} EUR`}
-                      />
-                    </div>
-                    <div className="flex flex-col items-center justify-end h-full">
-                      {d.actual > 0 && <span className="text-[8px] text-emerald-700 mb-0.5 whitespace-nowrap">{formatThousandsRoundUp(d.actual)}</span>}
-                      <div
-                        className="w-2 sm:w-2.5 bg-emerald-500 rounded-t"
-                        style={{ height: `${(d.actual / maxBar) * 100}%` }}
-                        title={`Actual: ${Math.round(d.actual).toLocaleString("de-DE")} EUR`}
-                      />
-                    </div>
-                  </>
+                  <div className="flex flex-col items-center justify-end h-full">
+                    {d.actual > 0 && <span className="text-[8px] text-emerald-700 mb-0.5 whitespace-nowrap">{formatThousandsRoundUp(d.actual)}</span>}
+                    <div
+                      className="w-2 sm:w-2.5 bg-emerald-500 rounded-t"
+                      style={{ height: `${(d.actual / maxBar) * 100}%` }}
+                      title={`Actual: ${Math.round(d.actual).toLocaleString("de-DE")} EUR`}
+                    />
+                  </div>
                 )}
               </div>
               <span className="text-[9px] text-slate-400">{d.label}</span>

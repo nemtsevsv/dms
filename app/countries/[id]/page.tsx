@@ -42,7 +42,7 @@ export default async function CountryPage({ params }: { params: { id: string } }
 
       <div>
         <h2 className="font-medium mb-4">Trade Overview</h2>
-        <CountryTradeOverview countryName={country.name} rows={tradeRows ?? []} />
+        <CountryTradeOverview countryId={country.id} countryName={country.name} rows={tradeRows ?? []} />
       </div>
     </AppShell>
   );

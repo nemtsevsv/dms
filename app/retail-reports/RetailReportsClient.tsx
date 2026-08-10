@@ -3,6 +3,7 @@
 import DealerTabs from "@/components/DealerTabs";
 import ProductsSalesReport from "./ProductsSalesReport";
 import RetailPerformanceTab from "./RetailPerformanceTab";
+import DailyRetailPerformanceTab from "./DailyRetailPerformanceTab";
 import StoreRatingsTab from "./StoreRatingsTab";
 
 export default function RetailReportsClient({ bundle, isStoreStaff }: { bundle: any; isStoreStaff: boolean }) {
@@ -18,6 +19,11 @@ export default function RetailReportsClient({ bundle, isStoreStaff }: { bundle: 
           key: "performance",
           label: "Monthly Retail Performance",
           content: <RetailPerformanceTab bundle={bundle} storeIds={bundle.ownStoreIds} />,
+        },
+        {
+          key: "daily-performance",
+          label: "Daily Retail Performance",
+          content: <DailyRetailPerformanceTab bundle={bundle} storeIds={bundle.ownStoreIds} />,
         },
         {
           key: "ratings",
