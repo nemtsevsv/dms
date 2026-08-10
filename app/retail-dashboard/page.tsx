@@ -21,6 +21,12 @@ export default async function RetailDashboardPage() {
   const weekEnd = getWeekEnd(now);
   const weekStartStr = toDateStr(weekStart);
   const weekEndStr = toDateStr(weekEnd);
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const lastWeekEnd = new Date(weekEnd);
+  lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
+  const lastWeekStartStr = toDateStr(lastWeekStart);
+  const lastWeekEndStr = toDateStr(lastWeekEnd);
   const monthStart = `${todayStr.slice(0, 7)}-01`;
   const { start: fyStart } = getFiscalYearRange(now);
 
@@ -40,6 +46,8 @@ export default async function RetailDashboardPage() {
       const [
         { data: trafficThisWeek },
         { data: receiptsThisWeek },
+        { data: trafficLastWeek },
+        { data: receiptsLastWeek },
         { data: trafficThisMonth },
         { data: receiptsThisMonth },
         { data: plans },
@@ -51,6 +59,8 @@ export default async function RetailDashboardPage() {
       ] = await Promise.all([
         supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", store.id).gte("occurred_at", `${weekStartStr}T00:00:00Z`).lte("occurred_at", `${weekEndStr}T23:59:59Z`),
         supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", store.id).gte("occurred_at", `${weekStartStr}T00:00:00Z`).lte("occurred_at", `${weekEndStr}T23:59:59Z`),
+        supabase.from("store_traffic_events").select("event_type, occurred_at").eq("store_id", store.id).gte("occurred_at", `${lastWeekStartStr}T00:00:00Z`).lte("occurred_at", `${lastWeekEndStr}T23:59:59Z`),
+        supabase.from("store_receipts").select("id, occurred_at, store_receipt_items(total)").eq("store_id", store.id).gte("occurred_at", `${lastWeekStartStr}T00:00:00Z`).lte("occurred_at", `${lastWeekEndStr}T23:59:59Z`),
         supabase.from("store_traffic_events").select("event_type").eq("store_id", store.id).gte("occurred_at", `${monthStart}T00:00:00Z`),
         supabase.from("store_receipts").select("id, store_receipt_items(total)").eq("store_id", store.id).gte("occurred_at", `${monthStart}T00:00:00Z`),
         supabase.from("store_sales_plan").select("year, month, plan_amount_local").eq("store_id", store.id),
@@ -70,6 +80,11 @@ export default async function RetailDashboardPage() {
       const testDrivesThisWeek = (trafficThisWeek ?? []).filter((t) => t.event_type === "test_drive").length;
       const receiptsCountThisWeek = (receiptsThisWeek ?? []).length;
       const conversionPct = visitorsThisWeek > 0 ? (receiptsCountThisWeek / visitorsThisWeek) * 100 : 0;
+
+      const visitorsLastWeek = (trafficLastWeek ?? []).filter((t) => t.event_type === "visitor").length;
+      const testDrivesLastWeek = (trafficLastWeek ?? []).filter((t) => t.event_type === "test_drive").length;
+      const receiptsCountLastWeek = (receiptsLastWeek ?? []).length;
+      const conversionLastWeekPct = visitorsLastWeek > 0 ? (receiptsCountLastWeek / visitorsLastWeek) * 100 : 0;
 
       // Monthly funnel
       const visitorsThisMonth = (trafficThisMonth ?? []).filter((t) => t.event_type === "visitor").length;
@@ -105,6 +120,7 @@ export default async function RetailDashboardPage() {
         const actualLocal = salesByMonth.get(key) ?? 0;
         return {
           label: MONTH_NAMES[d.getMonth()],
+          date: d,
           target: targetLocal / fxRate,
           actual: actualLocal / fxRate,
           traffic: trafficByMonth.get(key) ?? 0,
@@ -130,6 +146,7 @@ export default async function RetailDashboardPage() {
         const key = toDateStr(d);
         return {
           label: DAY_NAMES[i],
+          date: d,
           actual: (salesByDay.get(key) ?? 0) / fxRate,
           traffic: trafficByDay.get(key) ?? 0,
         };
@@ -143,6 +160,10 @@ export default async function RetailDashboardPage() {
         testDrivesThisWeek,
         receiptsThisWeek: receiptsCountThisWeek,
         conversionPct,
+        trafficLastWeek: visitorsLastWeek,
+        testDrivesLastWeek,
+        receiptsLastWeek: receiptsCountLastWeek,
+        conversionLastWeekPct,
         monthSalesEur,
         achievementPct,
         hasReportToday: !isScheduledToday || !!reportToday,

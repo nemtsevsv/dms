@@ -114,13 +114,15 @@ export default async function StoreCardPage({ params }: { params: { id: string }
             label: "General",
             content: (
               <div className="space-y-6">
-                <div className="max-w-xl bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm">
-                  <h2 className="font-medium mb-4">Store Info</h2>
-                  <StoreForm store={store} />
-                </div>
-                <div>
-                  <h2 className="font-medium mb-3">Schedule</h2>
-                  <StoreScheduleEditor storeId={store.id} schedule={schedule ?? []} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm">
+                    <h2 className="font-medium mb-4">Store Info</h2>
+                    <StoreForm store={store} />
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm">
+                    <h2 className="font-medium mb-4">Schedule</h2>
+                    <StoreScheduleEditor storeId={store.id} schedule={schedule ?? []} />
+                  </div>
                 </div>
                 <div>
                   <h2 className="font-medium mb-3">Staff</h2>

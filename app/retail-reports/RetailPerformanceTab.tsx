@@ -91,6 +91,7 @@ export default function RetailPerformanceTab({ bundle, storeIds }: { bundle: any
     const e = perMonth.get(key);
     return {
       label: `${MONTH_NAMES[Number(m) - 1]} ${y.slice(2)}`,
+      date: new Date(Number(y), Number(m) - 1, 1),
       target: (e?.target ?? 0) / fxRate,
       actual: (e?.actual ?? 0) / fxRate,
       traffic: e?.visitors ?? 0,

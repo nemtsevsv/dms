@@ -7,8 +7,8 @@ import RetailFunnel from "./RetailFunnel";
 import MonthlyTargetActualChart from "./MonthlyTargetActualChart";
 import WeeklySalesChart from "./WeeklySalesChart";
 
-type ChartMonth = { label: string; target: number; actual: number; traffic: number };
-type ChartDay = { label: string; actual: number; traffic: number };
+type ChartMonth = { label: string; date: Date; target: number; actual: number; traffic: number };
+type ChartDay = { label: string; date: Date; actual: number; traffic: number };
 
 type StoreMetrics = {
   id: string;
@@ -18,6 +18,10 @@ type StoreMetrics = {
   testDrivesThisWeek: number;
   receiptsThisWeek: number;
   conversionPct: number;
+  trafficLastWeek: number;
+  testDrivesLastWeek: number;
+  receiptsLastWeek: number;
+  conversionLastWeekPct: number;
   monthSalesEur: number;
   achievementPct: number;
   hasReportToday: boolean;
@@ -71,21 +75,57 @@ export default function RetailDashboardClient({ stores }: { stores: StoreMetrics
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="text-xs font-medium text-slate-500 mb-1">Traffic This Week</div>
-          <div className="text-2xl font-semibold">{selected.trafficThisWeek}</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">Traffic</div>
+          <div className="flex items-end gap-4">
+            <div>
+              <div className="text-2xl font-semibold">{selected.trafficThisWeek}</div>
+              <div className="text-[10px] text-slate-400">This week</div>
+            </div>
+            <div>
+              <div className="text-lg font-medium text-slate-400">{selected.trafficLastWeek}</div>
+              <div className="text-[10px] text-slate-400">Last week</div>
+            </div>
+          </div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="text-xs font-medium text-slate-500 mb-1">Test-Drives This Week</div>
-          <div className="text-2xl font-semibold">{selected.testDrivesThisWeek}</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">Test-Drives</div>
+          <div className="flex items-end gap-4">
+            <div>
+              <div className="text-2xl font-semibold">{selected.testDrivesThisWeek}</div>
+              <div className="text-[10px] text-slate-400">This week</div>
+            </div>
+            <div>
+              <div className="text-lg font-medium text-slate-400">{selected.testDrivesLastWeek}</div>
+              <div className="text-[10px] text-slate-400">Last week</div>
+            </div>
+          </div>
           <div className="text-xs text-slate-400 mt-1">Target: {TEST_DRIVE_TARGET_PER_WEEK}/week</div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="text-xs font-medium text-slate-500 mb-1">Receipts This Week</div>
-          <div className="text-2xl font-semibold">{selected.receiptsThisWeek}</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">Receipts</div>
+          <div className="flex items-end gap-4">
+            <div>
+              <div className="text-2xl font-semibold">{selected.receiptsThisWeek}</div>
+              <div className="text-[10px] text-slate-400">This week</div>
+            </div>
+            <div>
+              <div className="text-lg font-medium text-slate-400">{selected.receiptsLastWeek}</div>
+              <div className="text-[10px] text-slate-400">Last week</div>
+            </div>
+          </div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="text-xs font-medium text-slate-500 mb-1">Conversion</div>
-          <div className="text-2xl font-semibold">{Math.round(selected.conversionPct)}%</div>
+          <div className="text-xs font-medium text-slate-500 mb-2">Conversion</div>
+          <div className="flex items-end gap-4">
+            <div>
+              <div className="text-2xl font-semibold">{Math.round(selected.conversionPct)}%</div>
+              <div className="text-[10px] text-slate-400">This week</div>
+            </div>
+            <div>
+              <div className="text-lg font-medium text-slate-400">{Math.round(selected.conversionLastWeekPct)}%</div>
+              <div className="text-[10px] text-slate-400">Last week</div>
+            </div>
+          </div>
           <div className="text-xs text-slate-400 mt-1">Target: {CONVERSION_TARGET_PCT}%</div>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">

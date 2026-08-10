@@ -16,7 +16,7 @@ export default function RetailReportsClient({ bundle, isStoreStaff }: { bundle: 
         },
         {
           key: "performance",
-          label: "Retail Performance",
+          label: "Monthly Retail Performance",
           content: <RetailPerformanceTab bundle={bundle} storeIds={bundle.ownStoreIds} />,
         },
         {
