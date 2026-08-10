@@ -39,9 +39,10 @@ export default function LoadFromEurostatButton({ countryId }: { countryId: strin
         onClick={handleLoad}
         disabled={loading}
         className="flex items-center gap-1.5 px-3 py-2 border border-blue-300 text-blue-700 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-50"
+        title="Loads export data individually for all 27 EU member countries, 2014–present — this covers many combinations and can take a while"
       >
         <Download size={14} />
-        {loading ? "Loading..." : "Load from Eurostat"}
+        {loading ? "Loading (27 EU countries, this can take a minute)..." : "Load from Eurostat"}
       </button>
       {result && (
         <div className="mt-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2 max-w-md">
@@ -49,7 +50,7 @@ export default function LoadFromEurostatButton({ countryId }: { countryId: strin
           {result.savedRows !== undefined && (
             <div>
               <p>
-                Saved {result.savedRows} rows — {result.ok} combinations ok, {result.failed} failed
+                Saved {result.savedRows} rows — {result.ok}/{result.totalCombinations} country × HS code combinations returned data
               </p>
               {result.errors?.length > 0 && (
                 <ul className="mt-0.5 pl-3 list-disc text-red-600">

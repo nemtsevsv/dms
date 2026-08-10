@@ -180,3 +180,56 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
     .sort((a, b) => b.year - a.year)
     .slice(0, 3);
 }
+
+// ---------------- Eurostat Comext — Trade Overview loader (separate from
+// the Country Dashboard's fetchEurostatExport above) ----------------
+// Country Dashboard needs "the latest few years" per reporter/CN
+// combination, aggregated at EU27 level where relevant — fetchEurostatExport
+// above stays exactly as it is for that.
+// Trade Overview's "Load from Eurostat" has different requirements
+// entirely: every individual EU member state as its own reporter (no
+// EU27 aggregate — an aggregate row would double-count against the
+// individual countries in any per-country chart/total), and a full
+// history from 2014 rather than a rolling few-year window. Kept as its
+// own function so neither use case has to compromise for the other.
+export async function fetchEurostatExportForYears(partnerIso2: string, reporterIso2: string, hs6Code: string, startYear: number, endYear: number): Promise<YearValue[]> {
+  const params = new URLSearchParams({
+    "c[freq]": "A",
+    "c[reporter]": reporterIso2,
+    "c[partner]": partnerIso2,
+    "c[product]": hs6Code,
+    "c[flow]": FLOW_EXPORT,
+    "c[indicators]": "VALUE_EUR",
+    "c[TIME_PERIOD]": `ge:${startYear}+le:${endYear}`,
+    format: "csvdata",
+    formatVersion: "2.0",
+    compress: "false",
+  });
+
+  const url = `https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/3.0/data/dataflow/ESTAT/${EUROSTAT_DATASET}/${EUROSTAT_DATAFLOW_VERSION}?${params.toString()}`;
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => "");
+    throw new Error(`Eurostat ${EUROSTAT_DATASET} reporter=${reporterIso2} partner=${partnerIso2} product=${hs6Code}: HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 200)}` : ""}`);
+  }
+  const text = await res.text();
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const clean = (cell: string) => cell.trim().replace(/^"|"$/g, "");
+  const header = lines[0].split(",").map(clean);
+  const timeIdx = header.indexOf("TIME_PERIOD");
+  const valueIdx = header.indexOf("OBS_VALUE");
+  if (timeIdx === -1 || valueIdx === -1) return [];
+  const byYear = new Map<number, number>();
+  for (const line of lines.slice(1)) {
+    const cols = line.split(",").map(clean);
+    const period = cols[timeIdx];
+    const val = Number(cols[valueIdx]);
+    if (!period || Number.isNaN(val)) continue;
+    const year = Number(period.slice(0, 4));
+    byYear.set(year, (byYear.get(year) ?? 0) + val);
+  }
+  return Array.from(byYear.entries())
+    .map(([year, value]) => ({ year, value }))
+    .sort((a, b) => a.year - b.year);
+}

@@ -25,7 +25,7 @@ export default function DailyRetailPerformanceTab({ bundle, storeIds }: { bundle
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "");
   const store = stores.find((s: any) => s.id === storeId);
   const localCurrency = store?.currency ?? "EUR";
-  const fxRate = store?.fxRate ?? 1;
+  const fxRate = store?.fxRate || 1;
   const [currency, setCurrency] = useState<"local" | "EUR">("EUR");
   const rate = currency === "EUR" ? fxRate : 1;
   const displayCurrency = currency === "EUR" ? "EUR" : localCurrency;
@@ -178,6 +178,10 @@ export default function DailyRetailPerformanceTab({ bundle, storeIds }: { bundle
 
   return (
     <div>
+      {stores.length === 0 ? (
+        <p className="text-sm text-slate-400">No active stores to report on.</p>
+      ) : (
+        <>
       <div className="flex flex-wrap items-center gap-3 mb-6">
         {stores.length > 1 && (
           <select value={storeId} onChange={(e) => setStoreId(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg text-sm">
@@ -258,6 +262,8 @@ export default function DailyRetailPerformanceTab({ bundle, storeIds }: { bundle
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }
