@@ -2,8 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import CountryTable from "@/components/CountryTable";
 import CountriesOverviewWidgets from "@/components/CountriesOverviewWidgets";
-import Link from "next/link";
-import { Settings } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,13 +25,7 @@ export default async function CountriesPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-        <h1 className="text-xl font-semibold">Region</h1>
-        <Link href="/countries/hs-codes" className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50">
-          <Settings size={14} />
-          HS Codes
-        </Link>
-      </div>
+      <h1 className="text-xl font-semibold mb-6">Region</h1>
       <CountriesOverviewWidgets countries={countries ?? []} tradeRows={tradeRows ?? []} />
       <CountryTable countries={countries ?? []} dealerCounts={Object.fromEntries(dealerCountsByCountry)} />
     </AppShell>

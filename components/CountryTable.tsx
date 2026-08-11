@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { btnPrimary } from "@/lib/buttonStyles";
 import ColumnFilterHeader from "./ColumnFilterHeader";
+import { Settings } from "lucide-react";
 
 type Country = {
   id: string;
@@ -89,6 +90,10 @@ export default function CountryTable({ countries, dealerCounts }: { countries: C
         />
         <Link href="/countries/new" className={btnPrimary + " sm:ml-auto"}>
           + New Country
+        </Link>
+        <Link href="/countries/hs-codes" className="flex items-center gap-1.5 text-sm px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">
+          <Settings size={14} />
+          HS Codes
         </Link>
       </div>
       <p className="text-[11px] text-slate-400 mb-2">GDP and GDP PPP shown in million USD.</p>

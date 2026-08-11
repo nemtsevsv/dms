@@ -8,7 +8,7 @@ const COLORS = ["#2563EB", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#0EA5E9"
 type TradeRow = { exporting_country: string; importing_country: string; product_group: string | null; flow: string; year: number; value: number | null };
 
 export default function CountryImportChart({ countryName, rows }: { countryName: string; rows: TradeRow[] }) {
-  const allImports = rows.filter((r) => r.flow === "import" && r.importing_country === countryName);
+  const allImports = rows.filter((r) => r.flow === "export" && r.importing_country === countryName);
   const originCountries = Array.from(new Set(allImports.map((r) => r.exporting_country))).sort();
 
   // Colors are assigned once, from the full (unfiltered) set of product
@@ -45,7 +45,7 @@ export default function CountryImportChart({ countryName, rows }: { countryName:
       <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
         <div>
           <h3 className="font-medium">Trade Overview</h3>
-          <p className="text-xs text-slate-400">Import from EU</p>
+          <p className="text-xs text-slate-400">Export from EU</p>
         </div>
         <MultiSelectDropdown label="Origin Country" options={originCountries} selected={originFilter} onChange={setOriginFilter} />
       </div>

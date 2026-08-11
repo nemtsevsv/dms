@@ -56,7 +56,21 @@ export async function POST(req: NextRequest) {
     let ok = 0;
 
     const calls = hsCodes.flatMap((hs) => reporters.map(([iso2, name]) => ({ hs, reporterIso2: iso2, reporterName: name })));
-    const results = await Promise.allSettled(calls.map((c) => fetchEurostatExportForYears(master.iso2, c.reporterIso2, c.hs.hs_code, START_YEAR, CURRENT_YEAR)));
+
+    // Firing all ~135 combinations at once (27 countries × up to 5 HS
+    // codes) turned out to make every single one fail — Eurostat most
+    // likely rate-limits or otherwise rejects that much simultaneous load
+    // against the same dataset. Batching keeps peak concurrency modest and
+    // gives the server breathing room between waves.
+    const BATCH_SIZE = 12;
+    const BATCH_DELAY_MS = 400;
+    const results: PromiseSettledResult<any>[] = [];
+    for (let i = 0; i < calls.length; i += BATCH_SIZE) {
+      const batch = calls.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(batch.map((c) => fetchEurostatExportForYears(master.iso2, c.reporterIso2, c.hs.hs_code, START_YEAR, CURRENT_YEAR)));
+      results.push(...batchResults);
+      if (i + BATCH_SIZE < calls.length) await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+    }
 
     results.forEach((result, i) => {
       const { hs, reporterName } = calls[i];

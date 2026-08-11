@@ -39,7 +39,7 @@ export default function LoadFromEurostatButton({ countryId }: { countryId: strin
         onClick={handleLoad}
         disabled={loading}
         className="flex items-center gap-1.5 px-3 py-2 border border-blue-300 text-blue-700 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-50"
-        title="Loads export data individually for all 27 EU member countries, 2014–present — this covers many combinations and can take a while"
+        title="Loads export data individually for all 27 EU member countries, 2014–present, in small batches — this covers many combinations and can take a minute or two"
       >
         <Download size={14} />
         {loading ? "Loading (27 EU countries, this can take a minute)..." : "Load from Eurostat"}

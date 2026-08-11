@@ -192,7 +192,14 @@ export async function fetchEurostatExport(iso2: string, cnCode: string, reporter
 // individual countries in any per-country chart/total), and a full
 // history from 2014 rather than a rolling few-year window. Kept as its
 // own function so neither use case has to compromise for the other.
-export async function fetchEurostatExportForYears(partnerIso2: string, reporterIso2: string, hs6Code: string, startYear: number, endYear: number): Promise<YearValue[]> {
+export async function fetchEurostatExportForYears(partnerIso2: string, reporterIso2: string, hsCode: string, startYear: number, endYear: number): Promise<YearValue[]> {
+  // DS-059341 is "HS2-4-6" — it only accepts product codes at the 2/4/6-
+  // digit level, not the full 8-digit CN code the HS Codes library stores.
+  // This truncation was already correctly done in fetchEurostatExport
+  // above but was missing here — that's the actual cause of every
+  // reporter/partner combination failing with
+  // INVALID_QUERY_DIMENSION_VALUE on PRODUCT.
+  const hs6Code = hsCode.slice(0, 6);
   const params = new URLSearchParams({
     "c[freq]": "A",
     "c[reporter]": reporterIso2,
