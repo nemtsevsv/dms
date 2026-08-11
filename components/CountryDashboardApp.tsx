@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ALL_COUNTRY_FIELDS } from "@/lib/countryDashboardFields";
+import CountrySearchCombobox from "./CountrySearchCombobox";
+import CountryMasterTable from "./CountryMasterTable";
 
 type CountryMaster = {
   iso2: string;
@@ -100,25 +102,11 @@ export default function CountryDashboardApp({ countries }: { countries: CountryM
   return (
     <div>
       <div className="mb-6">
-        <label className="block text-xs font-medium text-slate-500 mb-1">Select Country (ISO2)</label>
-        <select
-          value={selectedIso2}
-          onChange={(e) => handleSelect(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-80 focus:outline-none focus:ring-2 focus:ring-slate-300"
-        >
-          <option value="">— Select a country —</option>
-          {countries
-            .slice()
-            .sort((a, b) => a.country_en.localeCompare(b.country_en))
-            .map((c) => (
-              <option key={c.iso2} value={c.iso2}>
-                {c.iso2} — {c.country_en}
-              </option>
-            ))}
-        </select>
+        <label className="block text-xs font-medium text-slate-500 mb-1">Select Country (ISO2 or name)</label>
+        <CountrySearchCombobox countries={countries} value={selectedIso2} onSelect={handleSelect} />
       </div>
 
-      {!selectedIso2 && <p className="text-sm text-slate-400">Select a country above to see its data.</p>}
+      {!selectedIso2 && <p className="text-sm text-slate-400 mb-6">Select a country above, or from the list below, to see its data.</p>}
 
       {country && (
         <div className="space-y-6">
@@ -184,6 +172,11 @@ export default function CountryDashboardApp({ countries }: { countries: CountryM
           </div>
         </div>
       )}
+
+      <div className="mt-8">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">All Countries</h2>
+        <CountryMasterTable countries={countries} onSelect={handleSelect} />
+      </div>
     </div>
   );
 }
