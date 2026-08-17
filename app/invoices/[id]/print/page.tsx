@@ -79,7 +79,8 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
           </p>
         </div>
         <div className="text-right">
-          <h2 className="text-2xl font-bold mb-2">INVOICE</h2>
+          <img src="/capof-badge.png" alt="CAPOF" className="h-8 w-auto ml-auto mb-2" />
+          <img src="/leica-badge.png" alt="Leica" className="h-8 w-8 ml-auto rounded-full" />
         </div>
       </div>
 
@@ -98,15 +99,15 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
       <table className="w-full mb-8 border-collapse">
         <thead>
           <tr className="border-b-2 border-slate-800 text-xs uppercase text-slate-500">
-            <th className="text-left py-2">Order-No.</th>
-            <th className="text-left py-2">Product</th>
-            <th className="text-right py-2">Qty</th>
-            <th className="text-right py-2">
+            <th className="text-left py-2 pr-4 align-top">Order-No.</th>
+            <th className="text-left py-2 pr-4 align-top">Product</th>
+            <th className="text-right py-2 pr-4 align-top">Qty</th>
+            <th className="text-right py-2 pr-4 align-top">
               Unit Price,
               <br />
               EUR
             </th>
-            <th className="text-right py-2">
+            <th className="text-right py-2 align-top">
               Total,
               <br />
               EUR
@@ -116,10 +117,10 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
         <tbody>
           {(items ?? []).map((i) => (
             <tr key={i.id} className="border-b border-slate-200">
-              <td className="py-2 font-mono text-xs">{i.sku}</td>
-              <td className="py-2">{i.product_name}</td>
-              <td className="py-2 text-right">{i.quantity}</td>
-              <td className="py-2 text-right">{amountFmt(Number(i.unit_price))}</td>
+              <td className="py-2 pr-4 font-mono text-xs">{i.sku}</td>
+              <td className="py-2 pr-4">{i.product_name}</td>
+              <td className="py-2 pr-4 text-right">{i.quantity}</td>
+              <td className="py-2 pr-4 text-right">{amountFmt(Number(i.unit_price))}</td>
               <td className="py-2 text-right">{amountFmt(Number(i.total))}</td>
             </tr>
           ))}
