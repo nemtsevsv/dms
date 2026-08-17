@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getNextOrderNumber } from "@/lib/documentNumbering";
 
 export default function OrderForm({ dealers, defaultOrderNumber }: { dealers: { id: string; company_name: string }[]; defaultOrderNumber: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tracks whether the person typed into the Order Number field themselves
+  // — if so, their value is respected as-is (they may be intentionally
+  // assigning a specific number by hand); if not, the number is
+  // recomputed fresh right before saving, since the page's initial
+  // suggestion can otherwise go stale (e.g. if the page was opened a
+  // while ago, or served from a cached render) and silently repeat a
+  // number that's since been taken.
+  const manuallyEdited = useRef(false);
 
   const [form, setForm] = useState({
     order_number: defaultOrderNumber,
@@ -17,7 +26,16 @@ export default function OrderForm({ dealers, defaultOrderNumber }: { dealers: { 
     currency: "EUR",
   });
 
+  // Re-check the suggested number as soon as the form actually mounts in
+  // the browser, rather than trusting only what the server rendered.
+  useEffect(() => {
+    getNextOrderNumber(supabase).then((fresh) => {
+      if (!manuallyEdited.current) setForm((f) => ({ ...f, order_number: fresh }));
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   function update(field: string, value: any) {
+    if (field === "order_number") manuallyEdited.current = true;
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -28,9 +46,15 @@ export default function OrderForm({ dealers, defaultOrderNumber }: { dealers: { 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    // Final safety net: if the person never touched the field themselves,
+    // take one more fresh number right at save time so two people opening
+    // "New Order" around the same time can't end up with the same number.
+    const orderNumber = manuallyEdited.current ? form.order_number : await getNextOrderNumber(supabase);
+
     const { data, error } = await supabase
       .from("orders")
-      .insert({ ...form, status: "New", created_by: user?.email ?? null })
+      .insert({ ...form, order_number: orderNumber, status: "New", created_by: user?.email ?? null })
       .select()
       .single();
     if (error) {

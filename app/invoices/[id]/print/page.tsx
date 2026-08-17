@@ -6,6 +6,13 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+function amountFmt(n: number) {
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // Browsers suggest the page's <title> as the filename when "Save as PDF"
 // is chosen from the print dialog (this page has no server-generated PDF
 // file of its own — printing IS the PDF creation step) — so the filename
@@ -30,7 +37,15 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   if (!invoice) notFound();
 
   const { data: items } = await supabase.from("invoice_items").select("*").eq("invoice_id", params.id);
-  const total = (items ?? []).reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const itemsTotal = (items ?? []).reduce((s, i) => s + (Number(i.total) || 0), 0);
+  // Freight Charges has no dedicated field yet — the Purchase tab's
+  // Logistic DE-MN/MN-XX figures are internal cost data, deliberately not
+  // shown to the dealer. Defaults to 0 until a customer-facing freight
+  // amount is added to the invoice.
+  const freightCharges = 0;
+  const vatRate = 0;
+  const vatAmount = round2(itemsTotal * vatRate);
+  const finalAmount = round2(itemsTotal + freightCharges + vatAmount);
   const dealer = invoice.dealers;
 
   return (
@@ -55,28 +70,16 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
             Official Distributor Central Asia
             <br />
             SWIFT CODE – GLMTMNUB
+            <br />
+            <br />
+            No: {invoice.invoice_number} Date: {format(new Date(invoice.invoice_date), "dd.MM.yyyy")}
+            {invoice.orders?.order_number && <> | Order: {invoice.orders.order_number}</>}
+            <br />
+            Terms of delivery: CIP &quot;{dealer?.city || ""}&quot;
           </p>
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-bold mb-2">INVOICE</h2>
-          <p>
-            <span className="text-slate-500">No: </span>
-            {invoice.invoice_number}
-          </p>
-          <p>
-            <span className="text-slate-500">Date: </span>
-            {format(new Date(invoice.invoice_date), "dd.MM.yyyy")}
-          </p>
-          {invoice.orders?.order_number && (
-            <p>
-              <span className="text-slate-500">Order: </span>
-              {invoice.orders.order_number}
-            </p>
-          )}
-          <p>
-            <span className="text-slate-500">Status: </span>
-            {invoice.status}
-          </p>
         </div>
       </div>
 
@@ -98,8 +101,16 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
             <th className="text-left py-2">Order-No.</th>
             <th className="text-left py-2">Product</th>
             <th className="text-right py-2">Qty</th>
-            <th className="text-right py-2">Unit Price</th>
-            <th className="text-right py-2">Total</th>
+            <th className="text-right py-2">
+              Unit Price,
+              <br />
+              EUR
+            </th>
+            <th className="text-right py-2">
+              Total,
+              <br />
+              EUR
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -108,8 +119,8 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
               <td className="py-2 font-mono text-xs">{i.sku}</td>
               <td className="py-2">{i.product_name}</td>
               <td className="py-2 text-right">{i.quantity}</td>
-              <td className="py-2 text-right">{Number(i.unit_price).toLocaleString("de-DE")}</td>
-              <td className="py-2 text-right">{Number(i.total).toLocaleString("de-DE")}</td>
+              <td className="py-2 text-right">{amountFmt(Number(i.unit_price))}</td>
+              <td className="py-2 text-right">{amountFmt(Number(i.total))}</td>
             </tr>
           ))}
         </tbody>
@@ -117,16 +128,24 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
 
       <div className="flex justify-end mb-10">
         <div className="w-64">
+          <div className="flex justify-between py-1 text-sm">
+            <span className="text-slate-500">Items total</span>
+            <span>{amountFmt(itemsTotal)} {invoice.currency}</span>
+          </div>
+          <div className="flex justify-between py-1 text-sm">
+            <span className="text-slate-500">Freight Charges</span>
+            <span>{amountFmt(freightCharges)} {invoice.currency}</span>
+          </div>
+          <div className="flex justify-between py-1 text-sm">
+            <span className="text-slate-500">VAT (0%)</span>
+            <span>{amountFmt(vatAmount)} {invoice.currency}</span>
+          </div>
           <div className="flex justify-between py-2 border-t-2 border-slate-800 font-bold text-base">
-            <span>Total</span>
-            <span>
-              {total.toLocaleString("de-DE")} {invoice.currency}
-            </span>
+            <span>Final amount</span>
+            <span>{amountFmt(finalAmount)} {invoice.currency}</span>
           </div>
         </div>
       </div>
-
-      <p className="text-xs text-slate-400">VAT rate 0%</p>
     </div>
   );
 }
