@@ -27,6 +27,15 @@ const FIELD_MAP: Record<string, string> = {
   retailprice: "retail_price_incl_vat",
   retailpriceincvat: "retail_price_incl_vat",
   dealerprice: "dealer_price",
+  customstariffno: "customs_tariff_no",
+  customstariffnumber: "customs_tariff_no",
+  countryoforigin: "country_of_origin",
+  grossweight: "gross_weight",
+  netweight: "net_weight",
+  weightunit: "weight_unit",
+  volume: "volume",
+  volumeunit: "volume_unit",
+  dimensions: "dimensions",
 };
 
 function parsePrice(v: any): number {
@@ -42,8 +51,14 @@ export default function ProductImport() {
   const [result, setResult] = useState<{ created: number; updated: number; skipped: number; errors: string[] } | null>(null);
 
   function downloadTemplate() {
-    const header = ["Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Retail Price incl VAT"];
-    const example = ["Example Brand", "Example Group", "Photo", "Cameras", "10001", "Example Product Name", "0,00", "0,00"];
+    const header = [
+      "Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Retail Price incl VAT",
+      "Customs Tariff No.", "Country of Origin", "Gross Weight", "Net Weight", "Weight Unit", "Volume", "Volume Unit", "Dimensions",
+    ];
+    const example = [
+      "Example Brand", "Example Group", "Photo", "Cameras", "10001", "Example Product Name", "0,00", "0,00",
+      "8525.89.00", "Germany", "1,2", "0,9", "kg", "0,003", "m3", "30x20x10 cm",
+    ];
     const csv = [header, example].map((r) => r.join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -82,6 +97,9 @@ export default function ProductImport() {
           if (mapped.list_price !== undefined) mapped.list_price = parsePrice(mapped.list_price);
           if (mapped.retail_price_incl_vat !== undefined) mapped.retail_price_incl_vat = parsePrice(mapped.retail_price_incl_vat);
           if (mapped.dealer_price !== undefined) mapped.dealer_price = parsePrice(mapped.dealer_price);
+          if (mapped.gross_weight !== undefined) mapped.gross_weight = mapped.gross_weight === "" ? null : parsePrice(mapped.gross_weight);
+          if (mapped.net_weight !== undefined) mapped.net_weight = mapped.net_weight === "" ? null : parsePrice(mapped.net_weight);
+          if (mapped.volume !== undefined) mapped.volume = mapped.volume === "" ? null : parsePrice(mapped.volume);
           parsedRows.push(mapped);
           skus.push(mapped.sku);
         }

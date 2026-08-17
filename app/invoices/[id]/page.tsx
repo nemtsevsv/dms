@@ -24,18 +24,30 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     .single();
   if (!invoice) notFound();
 
-  const [{ data: items }, { data: profiles }, { data: orderItems }] = await Promise.all([
+  const [{ data: items }, { data: profiles }, { data: orderItems }, { data: products }] = await Promise.all([
     supabase.from("invoice_items").select("*").eq("invoice_id", params.id),
     supabase.from("profiles").select("email, first_name, last_name"),
     invoice.order_id
       ? supabase.from("order_items").select("id, sku, product_name, quantity, unit_price").eq("order_id", invoice.order_id)
       : Promise.resolve({ data: [] as any[] }),
+    supabase.from("products").select("sku, customs_tariff_no, country_of_origin"),
   ]);
   const authorNames = buildAuthorNameMap(profiles ?? []);
 
   // Items can only be added to an invoice if they already exist on the
   // linked order — first add to the order, then it becomes invoiceable.
-  let orderItemsForPicker: { id: string; sku: string | null; product_name: string | null; unit_price: number | null; remaining: number }[] = [];
+  // Customs Tariff No. / Country of Origin live on the invoice line only
+  // (order items don't carry them) and are auto-filled here straight from
+  // the Product record by SKU, same way list price is looked up elsewhere.
+  let orderItemsForPicker: {
+    id: string;
+    sku: string | null;
+    product_name: string | null;
+    unit_price: number | null;
+    remaining: number;
+    customs_tariff_no: string | null;
+    country_of_origin: string | null;
+  }[] = [];
   if (invoice.order_id) {
     const orderItemIds = (orderItems ?? []).map((i) => i.id);
     const invoicedTotalByItem: Record<string, number> = {};
@@ -51,13 +63,19 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       }
     }
 
-    orderItemsForPicker = (orderItems ?? []).map((oi) => ({
-      id: oi.id,
-      sku: oi.sku,
-      product_name: oi.product_name,
-      unit_price: oi.unit_price,
-      remaining: (Number(oi.quantity) || 0) - (invoicedTotalByItem[oi.id] ?? 0),
-    }));
+    const productBySku = new Map((products ?? []).map((p) => [p.sku, p]));
+    orderItemsForPicker = (orderItems ?? []).map((oi) => {
+      const product = oi.sku ? productBySku.get(oi.sku) : undefined;
+      return {
+        id: oi.id,
+        sku: oi.sku,
+        product_name: oi.product_name,
+        unit_price: oi.unit_price,
+        remaining: (Number(oi.quantity) || 0) - (invoicedTotalByItem[oi.id] ?? 0),
+        customs_tariff_no: product?.customs_tariff_no ?? null,
+        country_of_origin: product?.country_of_origin ?? null,
+      };
+    });
   }
 
   const invoiceTotal = (items ?? []).reduce((s, it: any) => s + (Number(it.total) || 0), 0);

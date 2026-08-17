@@ -19,6 +19,14 @@ type Product = {
   list_price: number | null;
   dealer_price: number | null;
   retail_price_incl_vat: number | null;
+  customs_tariff_no: string | null;
+  country_of_origin: string | null;
+  gross_weight: number | null;
+  net_weight: number | null;
+  weight_unit: string | null;
+  volume: number | null;
+  volume_unit: string | null;
+  dimensions: string | null;
 };
 
 type SortKey = "brand" | "group_name" | "category" | "subgroup" | "sku" | "product_name" | "list_price" | "retail_price_incl_vat";
@@ -66,7 +74,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }
 
   function exportXlsx() {
-    const header = ["Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Dealer Price", "Retail Price incl VAT"];
+    const header = [
+      "Brand", "Group", "Category", "Sub-Category", "Order-No.", "Name", "List Price", "Dealer Price", "Retail Price incl VAT",
+      "Customs Tariff No.", "Country of Origin", "Gross Weight", "Net Weight", "Weight Unit", "Volume", "Volume Unit", "Dimensions",
+    ];
     const rows = filtered.map((p) => [
       p.brand ?? "",
       p.group_name ?? "",
@@ -77,6 +88,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       p.list_price ?? "",
       p.dealer_price ?? "",
       p.retail_price_incl_vat ?? "",
+      p.customs_tariff_no ?? "",
+      p.country_of_origin ?? "",
+      p.gross_weight ?? "",
+      p.net_weight ?? "",
+      p.weight_unit ?? "",
+      p.volume ?? "",
+      p.volume_unit ?? "",
+      p.dimensions ?? "",
     ]);
     exportToXlsx("products.xlsx", header, rows, "Products");
   }
@@ -113,7 +132,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-        <table className="w-full text-xs min-w-[800px]">
+        <table className="w-full text-xs min-w-[1500px]">
           <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase">
             <tr>
               <th className="text-left px-3 py-2.5">
@@ -132,6 +151,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               <th className="text-left px-3 py-2.5">{th("product_name", "Name")}</th>
               <th className="text-right px-3 py-2.5">{th("list_price", "List Price", "right")}</th>
               <th className="text-right px-3 py-2.5">{th("retail_price_incl_vat", "Retail incl. VAT", "right")}</th>
+              <th className="text-left px-3 py-2.5">Customs Tariff No.</th>
+              <th className="text-left px-3 py-2.5">Country of Origin</th>
+              <th className="text-right px-3 py-2.5">Gross Weight</th>
+              <th className="text-right px-3 py-2.5">Net Weight</th>
+              <th className="text-left px-3 py-2.5">Weight Unit</th>
+              <th className="text-right px-3 py-2.5">Volume</th>
+              <th className="text-left px-3 py-2.5">Volume Unit</th>
+              <th className="text-left px-3 py-2.5">Dimensions</th>
             </tr>
           </thead>
           <tbody>
@@ -149,11 +176,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 </td>
                 <td className="px-3 py-2 text-right">{p.list_price?.toLocaleString("de-DE") ?? "—"}</td>
                 <td className="px-3 py-2 text-right">{p.retail_price_incl_vat?.toLocaleString("de-DE") ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-500 font-mono text-[11px]">{p.customs_tariff_no ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-500">{p.country_of_origin ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-slate-500">{p.gross_weight ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-slate-500">{p.net_weight ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-500">{p.weight_unit ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-slate-500">{p.volume ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-500">{p.volume_unit ?? "—"}</td>
+                <td className="px-3 py-2 text-slate-500">{p.dimensions ?? "—"}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-slate-400">
+                <td colSpan={16} className="text-center py-8 text-slate-400">
                   No products found
                 </td>
               </tr>

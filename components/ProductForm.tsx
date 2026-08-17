@@ -19,6 +19,14 @@ export default function ProductForm({ product }: { product?: any }) {
     list_price: product?.list_price ?? 0,
     dealer_price: product?.dealer_price ?? 0,
     retail_price_incl_vat: product?.retail_price_incl_vat ?? 0,
+    customs_tariff_no: product?.customs_tariff_no ?? "",
+    country_of_origin: product?.country_of_origin ?? "",
+    gross_weight: product?.gross_weight ?? "",
+    net_weight: product?.net_weight ?? "",
+    weight_unit: product?.weight_unit ?? "kg",
+    volume: product?.volume ?? "",
+    volume_unit: product?.volume_unit ?? "m3",
+    dimensions: product?.dimensions ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,15 +39,21 @@ export default function ProductForm({ product }: { product?: any }) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    const payload = {
+      ...form,
+      gross_weight: form.gross_weight === "" ? null : Number(form.gross_weight),
+      net_weight: form.net_weight === "" ? null : Number(form.net_weight),
+      volume: form.volume === "" ? null : Number(form.volume),
+    };
     if (isEdit) {
       const { error } = await supabase
         .from("products")
-        .update({ ...form, updated_at: new Date().toISOString() })
+        .update({ ...payload, updated_at: new Date().toISOString() })
         .eq("id", product.id);
       if (error) setError(error.message);
       else router.push(`/products/${product.id}`);
     } else {
-      const { data, error } = await supabase.from("products").insert(form).select().single();
+      const { data, error } = await supabase.from("products").insert(payload).select().single();
       if (error) setError(error.message);
       else router.push(`/products/${data.id}`);
     }
@@ -88,6 +102,50 @@ export default function ProductForm({ product }: { product?: any }) {
         <div>
           <label className={labelCls}>Retail Price incl. VAT</label>
           <input type="number" step="0.01" className={inputCls} value={form.retail_price_incl_vat} onChange={(e) => update("retail_price_incl_vat", Number(e.target.value))} />
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs font-medium text-slate-500 mb-2 mt-2">Customs &amp; Logistics</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Customs Tariff No.</label>
+            <input className={inputCls} value={form.customs_tariff_no} onChange={(e) => update("customs_tariff_no", e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>Country of Origin</label>
+            <input className={inputCls} value={form.country_of_origin} onChange={(e) => update("country_of_origin", e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>Gross Weight</label>
+            <div className="flex gap-2">
+              <input type="number" step="0.001" className={inputCls} value={form.gross_weight} onChange={(e) => update("gross_weight", e.target.value)} />
+              <select className={inputCls + " w-24 shrink-0"} value={form.weight_unit} onChange={(e) => update("weight_unit", e.target.value)}>
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Net Weight</label>
+            <input type="number" step="0.001" className={inputCls} value={form.net_weight} onChange={(e) => update("net_weight", e.target.value)} />
+          </div>
+          <div>
+            <label className={labelCls}>Volume</label>
+            <div className="flex gap-2">
+              <input type="number" step="0.0001" className={inputCls} value={form.volume} onChange={(e) => update("volume", e.target.value)} />
+              <select className={inputCls + " w-24 shrink-0"} value={form.volume_unit} onChange={(e) => update("volume_unit", e.target.value)}>
+                <option value="m3">m³</option>
+                <option value="cm3">cm³</option>
+                <option value="l">l</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Dimensions</label>
+            <input placeholder="e.g. 30x20x10 cm" className={inputCls} value={form.dimensions} onChange={(e) => update("dimensions", e.target.value)} />
+          </div>
         </div>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

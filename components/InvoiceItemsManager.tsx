@@ -12,6 +12,9 @@ type Item = {
   quantity: number | null;
   unit_price: number | null;
   total: number | null;
+  customs_tariff_no: string | null;
+  country_of_origin: string | null;
+  serial_number: string | null;
 };
 
 type OrderItem = {
@@ -20,6 +23,8 @@ type OrderItem = {
   product_name: string | null;
   unit_price: number | null;
   remaining: number;
+  customs_tariff_no: string | null;
+  country_of_origin: string | null;
 };
 
 function round2(n: number) {
@@ -48,13 +53,21 @@ export default function InvoiceItemsManager({
   const [selected, setSelected] = useState<OrderItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
+  const [customsTariffNo, setCustomsTariffNo] = useState("");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
 
-  async function updateItem(id: string, field: string, value: number) {
+  async function updateItem(id: string, field: string, value: number | string) {
     const item = items.find((i) => i.id === id);
     if (!item) return;
-    const updated = { ...item, [field]: value };
-    const total = (Number(updated.quantity) || 0) * (Number(updated.unit_price) || 0);
-    await supabase.from("invoice_items").update({ [field]: value, total }).eq("id", id);
+    const isTextField = field === "customs_tariff_no" || field === "country_of_origin" || field === "serial_number";
+    if (isTextField) {
+      await supabase.from("invoice_items").update({ [field]: (value as string) || null }).eq("id", id);
+    } else {
+      const updated = { ...item, [field]: value };
+      const total = (Number(updated.quantity) || 0) * (Number(updated.unit_price) || 0);
+      await supabase.from("invoice_items").update({ [field]: value, total }).eq("id", id);
+    }
     setJustSaved(true);
     router.refresh();
     setTimeout(() => setJustSaved(false), 2000);
@@ -74,6 +87,9 @@ export default function InvoiceItemsManager({
       setSearch(`${match.sku} — ${match.product_name}`);
       setQuantity(match.remaining);
       setUnitPrice(match.unit_price ?? 0);
+      setCustomsTariffNo(match.customs_tariff_no ?? "");
+      setCountryOfOrigin(match.country_of_origin ?? "");
+      setSerialNumber("");
     } else {
       setSelected(null);
     }
@@ -99,11 +115,17 @@ export default function InvoiceItemsManager({
       quantity,
       unit_price: unitPrice,
       total,
+      customs_tariff_no: customsTariffNo || null,
+      country_of_origin: countryOfOrigin || null,
+      serial_number: serialNumber || null,
     });
     setSearch("");
     setSelected(null);
     setQuantity(1);
     setUnitPrice(0);
+    setCustomsTariffNo("");
+    setCountryOfOrigin("");
+    setSerialNumber("");
     setAdding(false);
     router.refresh();
   }
@@ -122,11 +144,14 @@ export default function InvoiceItemsManager({
         )}
       </div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm mb-4">
-        <table className="w-full text-sm min-w-[650px]">
+        <table className="w-full text-sm min-w-[950px]">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="text-left px-4 py-3">Order-No.</th>
               <th className="text-left px-4 py-3">Product</th>
+              <th className="text-left px-4 py-3">Customs Tariff No.</th>
+              <th className="text-left px-4 py-3">Country of Origin</th>
+              <th className="text-left px-4 py-3">Serial Number</th>
               <th className="text-right px-4 py-3">Qty</th>
               <th className="text-right px-4 py-3">Price</th>
               <th className="text-right px-4 py-3">Total</th>
@@ -138,6 +163,27 @@ export default function InvoiceItemsManager({
               <tr key={i.id} className="border-t border-slate-100">
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{i.sku}</td>
                 <td className="px-4 py-3">{i.product_name}</td>
+                <td className="px-4 py-3">
+                  <input
+                    defaultValue={i.customs_tariff_no ?? ""}
+                    onBlur={(e) => updateItem(i.id, "customs_tariff_no", e.target.value)}
+                    className="w-32 px-2 py-1 border border-slate-200 rounded"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    defaultValue={i.country_of_origin ?? ""}
+                    onBlur={(e) => updateItem(i.id, "country_of_origin", e.target.value)}
+                    className="w-28 px-2 py-1 border border-slate-200 rounded"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    defaultValue={i.serial_number ?? ""}
+                    onBlur={(e) => updateItem(i.id, "serial_number", e.target.value)}
+                    className="w-28 px-2 py-1 border border-slate-200 rounded"
+                  />
+                </td>
                 <td className="px-4 py-3 text-right">
                   <input
                     type="number"
@@ -183,6 +229,15 @@ export default function InvoiceItemsManager({
                   </datalist>
                 </td>
                 <td className="px-3 py-2">
+                  <input className={inputCls} placeholder="auto" value={customsTariffNo} onChange={(e) => setCustomsTariffNo(e.target.value)} />
+                </td>
+                <td className="px-3 py-2">
+                  <input className={inputCls} placeholder="auto" value={countryOfOrigin} onChange={(e) => setCountryOfOrigin(e.target.value)} />
+                </td>
+                <td className="px-3 py-2">
+                  <input className={inputCls} value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
+                </td>
+                <td className="px-3 py-2">
                   <input
                     type="number"
                     min={1}
@@ -216,7 +271,7 @@ export default function InvoiceItemsManager({
 
             {items.length === 0 && pickable.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-4 text-slate-400 text-xs">
+                <td colSpan={9} className="text-center py-4 text-slate-400 text-xs">
                   Nothing to invoice yet — add items to the order first, then come back here.
                 </td>
               </tr>

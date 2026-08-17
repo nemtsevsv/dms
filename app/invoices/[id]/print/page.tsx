@@ -49,7 +49,8 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   const dealer = invoice.dealers;
 
   return (
-    <div className="min-h-screen bg-white text-slate-800 p-10 max-w-3xl mx-auto text-sm">
+    <div className="min-h-screen bg-white text-slate-800 p-10 max-w-5xl mx-auto text-sm">
+      <style>{`@media print { @page { size: landscape; } }`}</style>
       <PrintButton />
 
       <div className="flex justify-between items-start mb-10 pb-6 border-b-2 border-slate-800">
@@ -100,7 +101,10 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
         <thead>
           <tr className="border-b-2 border-slate-800 text-xs uppercase text-slate-500">
             <th className="text-left py-2 pr-4 align-top">Order-No.</th>
+            <th className="text-left py-2 pr-4 align-top">Customs Tariff No.</th>
+            <th className="text-left py-2 pr-4 align-top">Country of Origin</th>
             <th className="text-left py-2 pr-4 align-top">Product</th>
+            <th className="text-left py-2 pr-4 align-top">Serial Number</th>
             <th className="text-right py-2 pr-4 align-top">Qty</th>
             <th className="text-right py-2 pr-4 align-top">
               Unit Price,
@@ -118,7 +122,10 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
           {(items ?? []).map((i) => (
             <tr key={i.id} className="border-b border-slate-200">
               <td className="py-2 pr-4 font-mono text-xs">{i.sku}</td>
+              <td className="py-2 pr-4 font-mono text-xs">{i.customs_tariff_no}</td>
+              <td className="py-2 pr-4">{i.country_of_origin}</td>
               <td className="py-2 pr-4">{i.product_name}</td>
+              <td className="py-2 pr-4">{i.serial_number}</td>
               <td className="py-2 pr-4 text-right">{i.quantity}</td>
               <td className="py-2 pr-4 text-right">{amountFmt(Number(i.unit_price))}</td>
               <td className="py-2 text-right">{amountFmt(Number(i.total))}</td>
