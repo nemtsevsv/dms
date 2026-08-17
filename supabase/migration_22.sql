@@ -27,3 +27,5 @@ alter table order_items add column if not exists serial_number text;
 alter table invoice_items add column if not exists customs_tariff_no text;
 alter table invoice_items add column if not exists country_of_origin text;
 alter table invoice_items add column if not exists serial_number text;
+
+notify pgrst, 'reload schema';

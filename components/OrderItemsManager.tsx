@@ -158,12 +158,8 @@ export default function OrderItemsManager({
             {rows.map((i, idx) => (
               <tr key={i.id} className="border-t border-slate-100">
                 <td className="px-3 py-2 text-slate-400">{idx + 1}</td>
-                <td className="px-3 py-2 font-mono text-xs">
-                  <input className={inputCls} defaultValue={i.sku ?? ""} onBlur={(e) => updateItem(i, { sku: e.target.value })} />
-                </td>
-                <td className="px-3 py-2">
-                  <input className={inputCls} defaultValue={i.product_name ?? ""} onBlur={(e) => updateItem(i, { product_name: e.target.value })} />
-                </td>
+                <td className="px-3 py-2 font-mono text-xs text-slate-500">{i.sku}</td>
+                <td className="px-3 py-2">{i.product_name}</td>
                 <td className="px-3 py-2">
                   <input
                     type="number"
