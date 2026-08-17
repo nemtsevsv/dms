@@ -12,6 +12,11 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
+const amountFormatter = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function parseLocaleNumber(s: string): number {
+  return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
 export default function InvoiceHeader({
   invoice,
   invoiceTotal,
@@ -33,6 +38,9 @@ export default function InvoiceHeader({
     logistics_de_mn: invoice.logistics_de_mn ?? "",
     logistics_mn_xx: invoice.logistics_mn_xx ?? "",
   });
+  const [lcAgTotalText, setLcAgTotalText] = useState(amountFormatter.format(invoice.lc_ag_invoice_total ?? 0));
+  const [logisticsDeMnText, setLogisticsDeMnText] = useState(amountFormatter.format(invoice.logistics_de_mn ?? 0));
+  const [logisticsMnXxText, setLogisticsMnXxText] = useState(amountFormatter.format(invoice.logistics_mn_xx ?? 0));
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
@@ -43,6 +51,9 @@ export default function InvoiceHeader({
   async function save() {
     setSaving(true);
     setJustSaved(false);
+    const lcAgTotalVal = parseLocaleNumber(lcAgTotalText);
+    const logisticsDeMnVal = parseLocaleNumber(logisticsDeMnText);
+    const logisticsMnXxVal = parseLocaleNumber(logisticsMnXxText);
     await supabase
       .from("invoices")
       .update({
@@ -51,9 +62,9 @@ export default function InvoiceHeader({
         status: form.status,
         lc_ag_invoice_number: form.lc_ag_invoice_number || null,
         lc_ag_invoice_date: form.lc_ag_invoice_date || null,
-        lc_ag_invoice_total: form.lc_ag_invoice_total === "" ? null : Number(form.lc_ag_invoice_total),
-        logistics_de_mn: form.logistics_de_mn === "" ? null : Number(form.logistics_de_mn),
-        logistics_mn_xx: form.logistics_mn_xx === "" ? null : Number(form.logistics_mn_xx),
+        lc_ag_invoice_total: lcAgTotalVal,
+        logistics_de_mn: logisticsDeMnVal,
+        logistics_mn_xx: logisticsMnXxVal,
         updated_at: new Date().toISOString(),
       })
       .eq("id", invoice.id);
@@ -63,9 +74,9 @@ export default function InvoiceHeader({
     setTimeout(() => setJustSaved(false), 2500);
   }
 
-  const lcAgTotal = Number(form.lc_ag_invoice_total) || 0;
-  const logisticsDeMn = Number(form.logistics_de_mn) || 0;
-  const logisticsMnXx = Number(form.logistics_mn_xx) || 0;
+  const lcAgTotal = parseLocaleNumber(lcAgTotalText);
+  const logisticsDeMn = parseLocaleNumber(logisticsDeMnText);
+  const logisticsMnXx = parseLocaleNumber(logisticsMnXxText);
   const financialResult = round2(invoiceTotal - lcAgTotal - logisticsDeMn - logisticsMnXx);
   const marginPct = invoiceTotal > 0 ? round2((financialResult / invoiceTotal) * 100) : 0;
 
@@ -130,17 +141,35 @@ export default function InvoiceHeader({
               </div>
               <div>
                 <label className={labelCls}>Total</label>
-                <input type="number" step="0.01" className={inputCls} value={form.lc_ag_invoice_total} onChange={(e) => update("lc_ag_invoice_total", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={lcAgTotalText}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setLcAgTotalText(e.target.value)}
+                  onBlur={() => setLcAgTotalText(amountFormatter.format(parseLocaleNumber(lcAgTotalText)))}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Logistic DE – MN</label>
-                <input type="number" step="0.01" className={inputCls} value={form.logistics_de_mn} onChange={(e) => update("logistics_de_mn", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={logisticsDeMnText}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setLogisticsDeMnText(e.target.value)}
+                  onBlur={() => setLogisticsDeMnText(amountFormatter.format(parseLocaleNumber(logisticsDeMnText)))}
+                />
               </div>
               <div>
                 <label className={labelCls}>Logistic MN – {dealerCountryCode}</label>
-                <input type="number" step="0.01" className={inputCls} value={form.logistics_mn_xx} onChange={(e) => update("logistics_mn_xx", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={logisticsMnXxText}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setLogisticsMnXxText(e.target.value)}
+                  onBlur={() => setLogisticsMnXxText(amountFormatter.format(parseLocaleNumber(logisticsMnXxText)))}
+                />
               </div>
             </div>
           </div>

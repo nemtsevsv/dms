@@ -2,8 +2,22 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import PrintButton from "@/components/PrintButton";
 import { format } from "date-fns";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+// Browsers suggest the page's <title> as the filename when "Save as PDF"
+// is chosen from the print dialog (this page has no server-generated PDF
+// file of its own — printing IS the PDF creation step) — so the filename
+// requested ("Invoice number Invoice date Dealer Name") is set here.
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const supabase = createClient();
+  const { data: invoice } = await supabase.from("invoices").select("invoice_number, invoice_date, dealers(company_name)").eq("id", params.id).single();
+  if (!invoice) return {};
+  const dateStr = format(new Date(invoice.invoice_date), "dd.MM.yyyy");
+  const dealerName = (invoice as any).dealers?.company_name ?? "";
+  return { title: [invoice.invoice_number, dateStr, dealerName].filter(Boolean).join(" ") };
+}
 
 export default async function InvoicePrintPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
