@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function OrderForm({ dealers }: { dealers: { id: string; company_name: string }[] }) {
+export default function OrderForm({ dealers, defaultOrderNumber }: { dealers: { id: string; company_name: string }[]; defaultOrderNumber: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    order_number: `ORD-${Date.now().toString().slice(-6)}`,
+    order_number: defaultOrderNumber,
     dealer_id: dealers[0]?.id ?? "",
     order_date: new Date().toISOString().slice(0, 10),
     currency: "EUR",

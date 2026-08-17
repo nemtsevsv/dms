@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FileText } from "lucide-react";
 import { btnPrimary } from "@/lib/buttonStyles";
+import { getNextInvoiceNumber } from "@/lib/documentNumbering";
 
 type Item = {
   id: string;
@@ -44,10 +45,11 @@ export default function CreateInvoiceButton({
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    const invoiceNumber = await getNextInvoiceNumber(supabase, orderId);
     const { data: invoice, error } = await supabase
       .from("invoices")
       .insert({
-        invoice_number: `INV-${orderNumber}-${Date.now().toString().slice(-4)}`,
+        invoice_number: invoiceNumber,
         order_id: orderId,
         dealer_id: dealerId,
         currency,

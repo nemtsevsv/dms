@@ -1,12 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
 import OrderForm from "@/components/OrderForm";
+import { getNextOrderNumber } from "@/lib/documentNumbering";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewOrderPage() {
   const supabase = createClient();
-  const { data: dealers } = await supabase.from("dealers").select("id, company_name").order("company_name");
+  const [{ data: dealers }, nextOrderNumber] = await Promise.all([
+    supabase.from("dealers").select("id, company_name").order("company_name"),
+    getNextOrderNumber(supabase),
+  ]);
 
   return (
     <AppShell>
@@ -16,7 +20,7 @@ export default async function NewOrderPage() {
           Please add at least one dealer first, in the Dealers section.
         </p>
       )}
-      <OrderForm dealers={dealers ?? []} />
+      <OrderForm dealers={dealers ?? []} defaultOrderNumber={nextOrderNumber} />
     </AppShell>
   );
 }
